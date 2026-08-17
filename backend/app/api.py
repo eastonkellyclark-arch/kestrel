@@ -65,7 +65,7 @@ def list_listings(
         conditions.append("posted_at >= ?")
         params.append(posted_since)
     if degree_not_required is True:
-        conditions.append("score_breakdown LIKE '%\"not_mentioned\"%' OR score_breakdown LIKE '%\"no_degree\"%' OR score_breakdown LIKE '%\"equivalent_ok\"%'")
+        conditions.append("degree_hard_required = 0")
     if status:
         conditions.append("status = ?")
         params.append(status)

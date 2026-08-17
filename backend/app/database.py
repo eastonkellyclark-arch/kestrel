@@ -85,6 +85,7 @@ def init_db() -> None:
             -- Scoring (Phase 3)
             score               REAL,
             score_breakdown     TEXT,  -- JSON per-dimension breakdown
+            degree_hard_required INTEGER NOT NULL DEFAULT 0,
 
             -- Status (Phase 6)
             status              TEXT NOT NULL DEFAULT 'new',

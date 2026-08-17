@@ -151,9 +151,12 @@ def score_all() -> dict:
     conn = get_connection()
     for row in rows:
         composite, breakdown = score_listing(dict(row), profile, weights, now)
+        # Derive degree_hard_required from the breakdown
+        dp_detail = breakdown.get("detail", {}).get("degree_posture", {})
+        degree_hard = 1 if dp_detail.get("posture") == "hard_requirement" else 0
         conn.execute(
-            "UPDATE listings SET score = ?, score_breakdown = ? WHERE id = ?",
-            (composite, json.dumps(breakdown), row["id"]),
+            "UPDATE listings SET score = ?, score_breakdown = ?, degree_hard_required = ? WHERE id = ?",
+            (composite, json.dumps(breakdown), degree_hard, row["id"]),
         )
         stats["scored"] += 1
         if breakdown.get("dealbreaker"):
