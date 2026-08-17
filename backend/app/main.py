@@ -7,6 +7,7 @@ from fastapi import FastAPI
 
 from .api import router
 from .database import init_db
+from .desk import router as desk_router
 from .settings import settings
 
 logger = logging.getLogger("kestrel")
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Kestrel", lifespan=lifespan)
 app.include_router(router)
+app.include_router(desk_router)
 
 
 @app.get("/health")

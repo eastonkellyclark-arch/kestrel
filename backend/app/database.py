@@ -100,7 +100,27 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_listings_type ON listings(listing_type);
         CREATE INDEX IF NOT EXISTS idx_listings_score ON listings(score);
 
-        INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '3');
+        CREATE TABLE IF NOT EXISTS status_history (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id  INTEGER NOT NULL REFERENCES listings(id),
+            old_status  TEXT,
+            new_status  TEXT NOT NULL,
+            note        TEXT,
+            changed_at  TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_status_history_listing ON status_history(listing_id);
+
+        CREATE TABLE IF NOT EXISTS notes (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id  INTEGER NOT NULL REFERENCES listings(id),
+            content     TEXT NOT NULL,
+            created_at  TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_notes_listing ON notes(listing_id);
+
+        INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '4');
         """
     )
     conn.commit()
