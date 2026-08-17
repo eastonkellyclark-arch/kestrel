@@ -90,6 +90,13 @@ def export_public(output_dir: Path) -> int:
                 "skill_factor": breakdown.get("skill_factor"),
                 "scale_label": breakdown.get("scale_label"),
                 "dimensions": breakdown.get("dimensions", {}),
+                "detail": {
+                    "skill_match": breakdown.get("detail", {}).get("skill_match", {}),
+                    "degree_posture": breakdown.get("detail", {}).get("degree_posture", {}),
+                    "freshness": breakdown.get("detail", {}).get("freshness", {}),
+                    "location_fit": breakdown.get("detail", {}).get("location_fit", {}),
+                    "seniority_fit": breakdown.get("detail", {}).get("seniority_fit", {}),
+                },
             },
         }
         detail_path = listings_dir / f"{listing_id}.json"

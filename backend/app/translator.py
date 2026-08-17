@@ -15,17 +15,43 @@ from .remote_detect import detect_remote
 
 logger = logging.getLogger("kestrel.translator")
 
-# Strip HTML tags for description plaintext
-_HTML_TAG = re.compile(r"<[^>]+>")
-_HTML_ENTITY = re.compile(r"&\w+;")
+# Sanitize HTML: keep structural tags, strip everything else.
+# This preserves list formatting for display while staying safe.
+_SAFE_TAGS = {"p", "br", "ul", "ol", "li", "h1", "h2", "h3", "h4", "h5", "h6",
+              "strong", "b", "em", "i", "div", "span"}
+_TAG_RE = re.compile(r"<(/?)(\w+)([^>]*)>", re.IGNORECASE)
 _MULTI_NEWLINE = re.compile(r"\n{3,}")
-_MULTI_SPACE = re.compile(r"[ \t]{2,}")
+_MULTI_BR = re.compile(r"(<br\s*/?>){3,}", re.IGNORECASE)
+
+
+def _sanitize_html(html: str) -> str:
+    """Keep safe structural tags, strip attributes and dangerous tags."""
+    # Decode HTML entities first — Greenhouse encodes tags as &lt;p&gt;
+    import html as html_mod
+    html = html_mod.unescape(html)
+
+    def _replace_tag(m: re.Match) -> str:
+        slash = m.group(1)
+        tag = m.group(2).lower()
+        if tag in _SAFE_TAGS:
+            return f"<{slash}{tag}>"
+        # Replace block-level removed tags with newline, inline with nothing
+        if tag in ("div", "section", "article", "header", "footer", "table", "tr", "td", "th"):
+            return "\n"
+        return ""
+    result = _TAG_RE.sub(_replace_tag, html)
+    result = re.sub(r"&nbsp;", " ", result)
+    result = _MULTI_BR.sub("<br>", result)
+    return result.strip()
 
 
 def _strip_html(html: str) -> str:
-    text = _HTML_TAG.sub("\n", html)
-    text = _HTML_ENTITY.sub(" ", text)
-    text = _MULTI_SPACE.sub(" ", text)
+    """Strip ALL HTML to plaintext. Used for desc_quality classification."""
+    import html as html_mod
+    html = html_mod.unescape(html)
+    text = re.sub(r"<[^>]+>", "\n", html)
+    text = re.sub(r"&\w+;", " ", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
     text = _MULTI_NEWLINE.sub("\n\n", text)
     return text.strip()
 
@@ -45,8 +71,10 @@ def _parse_greenhouse(raw: dict, board_slug: str) -> dict | None:
     loc = raw.get("location", {})
     location = loc.get("name", "") if isinstance(loc, dict) else str(loc)
 
-    # Description (HTML → plaintext)
-    description = _strip_html(raw.get("content", "") or "")
+    # Description: sanitized HTML for display, plaintext for classification
+    raw_html = raw.get("content", "") or ""
+    description = _sanitize_html(raw_html)
+    desc_plain = _strip_html(raw_html)
 
     # URL
     url = raw.get("absolute_url", "")
@@ -60,9 +88,9 @@ def _parse_greenhouse(raw: dict, board_slug: str) -> dict | None:
     departments = raw.get("departments", [])
     department = departments[0].get("name", "") if departments else ""
 
-    # Remote detection
+    # Remote detection (uses plaintext)
     is_remote, remote_conf = detect_remote(
-        location=location, title=title, description=description,
+        location=location, title=title, description=desc_plain,
     )
 
     return {
@@ -81,7 +109,7 @@ def _parse_greenhouse(raw: dict, board_slug: str) -> dict | None:
         "department": department,
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
-        "description_quality": classify_description(description, title),
+        "description_quality": classify_description(desc_plain, title),
     }
 
 
@@ -107,19 +135,25 @@ def _parse_lever(raw: dict, board_slug: str) -> dict | None:
         location = ", ".join(all_locs)
 
     # Description — combine all text sections
-    desc_parts = []
+    # Sanitized HTML for display, plaintext for classification
+    html_parts = []
+    plain_parts = []
     for field in ("description", "additional", "opening"):
         text = raw.get(field, "")
         if text:
-            desc_parts.append(_strip_html(text))
+            html_parts.append(_sanitize_html(text))
+            plain_parts.append(_strip_html(text))
     for lst in raw.get("lists", []):
         header = lst.get("text", "")
-        content = _strip_html(lst.get("content", ""))
+        content_html = lst.get("content", "")
         if header:
-            desc_parts.append(header)
-        if content:
-            desc_parts.append(content)
-    description = "\n\n".join(desc_parts)
+            html_parts.append(f"<strong>{header}</strong>")
+            plain_parts.append(header)
+        if content_html:
+            html_parts.append(_sanitize_html(content_html))
+            plain_parts.append(_strip_html(content_html))
+    description = "\n".join(html_parts)
+    desc_plain = "\n\n".join(plain_parts)
 
     url = raw.get("hostedUrl", "")
 
@@ -134,7 +168,7 @@ def _parse_lever(raw: dict, board_slug: str) -> dict | None:
     workplace_type = raw.get("workplaceType", "")
 
     is_remote, remote_conf = detect_remote(
-        location=location, title=title, description=description,
+        location=location, title=title, description=desc_plain,
         workplace_type=workplace_type,
     )
 
@@ -154,7 +188,7 @@ def _parse_lever(raw: dict, board_slug: str) -> dict | None:
         "department": department,
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
-        "description_quality": classify_description(description, title),
+        "description_quality": classify_description(desc_plain, title),
     }
 
 

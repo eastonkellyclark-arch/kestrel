@@ -484,12 +484,77 @@ body {
   margin-bottom: 0.75rem;
 }
 
-.description-text {
+/* ── Why this score ────────────────────────── */
+
+.why-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.why-panel h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.why-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.why-list li {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  padding-left: 1rem;
+  position: relative;
+}
+
+.why-list li::before {
+  content: "\2022";
+  position: absolute;
+  left: 0;
+  color: var(--text-dim);
+}
+
+/* ── HTML description ─────────────────────── */
+
+.description-html {
   font-size: 0.85rem;
   line-height: 1.7;
   color: var(--text-muted);
-  white-space: pre-wrap;
   word-break: break-word;
+}
+
+.description-html p {
+  margin-bottom: 0.75rem;
+}
+
+.description-html ul, .description-html ol {
+  margin: 0.5rem 0 0.75rem 1.5rem;
+}
+
+.description-html li {
+  margin-bottom: 0.3rem;
+}
+
+.description-html h1, .description-html h2, .description-html h3,
+.description-html h4, .description-html h5, .description-html h6 {
+  color: var(--text);
+  margin: 1rem 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.description-html strong, .description-html b {
+  color: var(--text);
 }
 
 /* ── Responsive ────────────────────────────── */

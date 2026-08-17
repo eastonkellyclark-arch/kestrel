@@ -15,8 +15,8 @@ const DIM_LABELS: Record<string, string> = {
   source_quality: 'Source Quality',
 };
 
-function ScoreBar({ label, score, maxScore = 100 }: { label: string; score: number; maxScore?: number }) {
-  const pct = Math.min(100, (score / maxScore) * 100);
+function ScoreBar({ label, score }: { label: string; score: number }) {
+  const pct = Math.min(100, score);
   const color = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--red)';
   return (
     <div className="score-bar-row">
@@ -27,6 +27,93 @@ function ScoreBar({ label, score, maxScore = 100 }: { label: string; score: numb
       <span className="score-bar-value">{score.toFixed(0)}</span>
     </div>
   );
+}
+
+function daysAgoText(days: number | null | undefined): string {
+  if (days === null || days === undefined) return 'unknown age';
+  if (days <= 0) return 'posted today';
+  if (days === 1) return 'posted yesterday';
+  if (days < 7) return `posted ${days} days ago`;
+  if (days < 30) return `posted ${Math.floor(days / 7)} weeks ago`;
+  return `posted ${Math.floor(days / 30)} months ago`;
+}
+
+function buildWhyText(detail: ListingDetail): string[] {
+  const bd = detail.breakdown;
+  const d = bd.detail ?? {};
+  const dims = bd.dimensions;
+  const lines: string[] = [];
+
+  // Skill match — the main story
+  const sm = d.skill_match;
+  const allHits = [
+    ...(sm?.primary_hits ?? []),
+    ...(sm?.secondary_hits ?? []),
+    ...(sm?.bonus_hits ?? []),
+  ];
+  const titleHits = sm?.title_hits ?? [];
+  const skillScore = dims.skill_match?.score ?? 0;
+  const factorPct = Math.round((bd.skill_factor ?? 0) * 100);
+
+  if (allHits.length === 0) {
+    lines.push(`None of your profiled skills appear in this listing. The overall score was scaled to ${factorPct}%.`);
+  } else {
+    const titleNote = titleHits.length > 0
+      ? ` (${titleHits.join(', ')} appear${titleHits.length === 1 ? 's' : ''} in the title, weighted 2\u00d7)`
+      : '';
+    lines.push(
+      `Matched ${allHits.length} skill${allHits.length > 1 ? 's' : ''}: ${allHits.join(', ')}${titleNote}. ` +
+      `Skill match score: ${skillScore.toFixed(0)}/100, scaling the overall result to ${factorPct}%.`
+    );
+  }
+
+  // Degree posture
+  const dp = d.degree_posture;
+  if (dp?.posture === 'no_degree') {
+    lines.push('Explicitly states no degree is required.');
+  } else if (dp?.posture === 'not_mentioned') {
+    lines.push('No degree requirement mentioned.');
+  } else if (dp?.posture === 'equivalent_ok') {
+    lines.push('Degree preferred but equivalent experience accepted.');
+  } else if (dp?.posture === 'hard_requirement') {
+    lines.push('Requires a specific degree \u2014 scored lower on degree posture.');
+  } else if (dp?.posture === 'mentioned_unclear') {
+    lines.push('Degree mentioned but requirement is unclear.');
+  }
+
+  // Location
+  const lf = d.location_fit;
+  if (lf?.fit === 'metro') {
+    lines.push('Located in the Twin Cities metro \u2014 strong location fit.');
+  } else if (lf?.fit === 'state') {
+    lines.push('Located in Minnesota.');
+  } else if (lf?.fit === 'us_remote' || lf?.fit === 'us_remote_inferred') {
+    lines.push('US Remote \u2014 strong location fit.');
+  } else if (lf?.fit === 'non_us_remote') {
+    lines.push('Remote but outside the US \u2014 likely not eligible.');
+  } else if (lf?.fit === 'non_us_onsite') {
+    lines.push('Outside the US and not remote \u2014 not a viable location.');
+  } else if (lf?.fit === 'us_not_metro') {
+    lines.push('US-based but outside the Twin Cities \u2014 would require relocation.');
+  } else if (lf?.fit === 'remote_ambiguous') {
+    lines.push('Listed as remote but country is unclear.');
+  }
+
+  // Freshness
+  const fr = d.freshness;
+  if (fr?.days_old !== null && fr?.days_old !== undefined) {
+    lines.push(`${daysAgoText(fr.days_old).charAt(0).toUpperCase() + daysAgoText(fr.days_old).slice(1)}.`);
+  }
+
+  // Seniority
+  const sf = d.seniority_fit;
+  if (sf?.level === 'too_senior') {
+    lines.push(`Title suggests a very senior role ("${sf.matched}") \u2014 may be above target range.`);
+  } else if (sf?.level === 'too_junior') {
+    lines.push(`Title suggests a junior role ("${sf.matched}") \u2014 below target range.`);
+  }
+
+  return lines;
 }
 
 export function DetailView({ detail, loading, onBack }: Props) {
@@ -50,6 +137,7 @@ export function DetailView({ detail, loading, onBack }: Props) {
 
   const bd = detail.breakdown;
   const dims = bd?.dimensions ?? {};
+  const whyLines = bd ? buildWhyText(detail) : [];
 
   return (
     <div className="detail-page">
@@ -71,6 +159,17 @@ export function DetailView({ detail, loading, onBack }: Props) {
         </div>
       </div>
 
+      {whyLines.length > 0 && (
+        <div className="why-panel">
+          <h2>Why this score?</h2>
+          <ul className="why-list">
+            {whyLines.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {bd && (
         <div className="breakdown-panel">
           <h2>Score Breakdown</h2>
@@ -78,7 +177,6 @@ export function DetailView({ detail, loading, onBack }: Props) {
             Hygiene: {bd.hygiene_score?.toFixed(0)} &times;{' '}
             {((bd.skill_factor ?? 0) * 100).toFixed(0)}% skill factor ={' '}
             <strong>{bd.composite?.toFixed(1)}</strong>
-            <span className="scale-label">{bd.scale_label}</span>
           </div>
           <div className="score-bars">
             {Object.entries(dims).map(([key, val]) => (
@@ -97,7 +195,10 @@ export function DetailView({ detail, loading, onBack }: Props) {
       {detail.description && detail.description_quality === 'good' && (
         <div className="description-panel">
           <h2>Description</h2>
-          <div className="description-text">{detail.description}</div>
+          <div
+            className="description-html"
+            dangerouslySetInnerHTML={{ __html: detail.description }}
+          />
         </div>
       )}
 
