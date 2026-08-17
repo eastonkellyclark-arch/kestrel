@@ -49,7 +49,49 @@ def init_db() -> None:
             UNIQUE(source, source_id)
         );
 
-        INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '1');
+        CREATE TABLE IF NOT EXISTS listings (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_type        TEXT NOT NULL DEFAULT 'job',  -- 'job' or 'gig'
+            source              TEXT NOT NULL,
+            source_id           TEXT NOT NULL,
+            board_slug          TEXT NOT NULL,
+
+            -- Display versions (as received)
+            title_display       TEXT NOT NULL,
+            company_display     TEXT NOT NULL,
+            location_display    TEXT,
+
+            -- Normalized versions (for matching)
+            title_normalized    TEXT NOT NULL,
+            company_normalized  TEXT NOT NULL,
+
+            -- Content
+            description         TEXT,
+            url                 TEXT,
+            posted_at           TEXT,
+            department          TEXT,
+
+            -- Remote detection
+            is_remote           INTEGER NOT NULL DEFAULT 0,
+            remote_confidence   REAL NOT NULL DEFAULT 0.0,
+
+            -- Dedupe
+            canonical_id        INTEGER REFERENCES listings(id),
+            dedupe_score        REAL,
+
+            -- Status (Phase 6)
+            status              TEXT NOT NULL DEFAULT 'new',
+
+            created_at          TEXT NOT NULL,
+
+            UNIQUE(source, source_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_listings_canonical ON listings(canonical_id);
+        CREATE INDEX IF NOT EXISTS idx_listings_company_norm ON listings(company_normalized);
+        CREATE INDEX IF NOT EXISTS idx_listings_type ON listings(listing_type);
+
+        INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '2');
         """
     )
     conn.commit()
