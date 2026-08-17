@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from .api import router
 from .database import init_db
 from .settings import settings
 
@@ -21,6 +22,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Kestrel", lifespan=lifespan)
+app.include_router(router)
 
 
 @app.get("/health")
