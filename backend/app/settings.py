@@ -15,8 +15,12 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
 
-    # Database
+    # Database — resolved to absolute at startup so CWD changes can't move it
     data_dir: Path = Path("./data")
+
+    def model_post_init(self, __context: object) -> None:
+        # Resolve relative data_dir to absolute against CWD at startup time
+        object.__setattr__(self, "data_dir", self.data_dir.resolve())
 
     # Adzuna (Phase 8)
     adzuna_app_id: str = ""

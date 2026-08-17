@@ -1,43 +1,13 @@
 #!/usr/bin/env bash
-#
-# Pre-commit hook: block commits containing credential-like patterns.
-# Structural over policy — make the wrong thing impossible.
+# Shim — delegates to the Python script in tools/.
+# Wired via: git config core.hooksPath .githooks
 
-set -euo pipefail
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
-# Patterns that look like secrets
-PATTERNS=(
-  # Generic key/token assignments
-  '["\x27](?:sk|pk|api|token|secret|password|auth|key)[-_]?[A-Za-z0-9]{20,}["\x27]'
-  # AWS
-  'AKIA[0-9A-Z]{16}'
-  # GitHub
-  'gh[pousr]_[A-Za-z0-9_]{36,}'
-  # Generic long hex/base64 secrets assigned to variables
-  '(?:API_KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL)\s*=\s*["\x27][A-Za-z0-9+/=_-]{16,}["\x27]'
-)
-
-STAGED=$(git diff --cached --name-only --diff-filter=ACM)
-if [ -z "$STAGED" ]; then
-  exit 0
+# Try python3 first (Unix/macOS), fall back to python (Windows).
+# Test with --version to avoid the Windows Store stub that exists but errors.
+if python3 --version >/dev/null 2>&1; then
+  exec python3 "$REPO_ROOT/tools/check_secrets.py"
+else
+  exec python "$REPO_ROOT/tools/check_secrets.py"
 fi
-
-FAILED=0
-for pattern in "${PATTERNS[@]}"; do
-  # -P = Perl regex, -n = line numbers, -H = filenames
-  if echo "$STAGED" | xargs git diff --cached -U0 -- | grep -P -i "$pattern" 2>/dev/null; then
-    FAILED=1
-  fi
-done
-
-if [ "$FAILED" -ne 0 ]; then
-  echo ""
-  echo "=========================================================="
-  echo "  BLOCKED: Staged changes contain credential-like values."
-  echo "  Remove secrets before committing."
-  echo "=========================================================="
-  echo ""
-  exit 1
-fi
-
-exit 0

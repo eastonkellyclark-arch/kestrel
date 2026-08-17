@@ -1,5 +1,6 @@
 """Kestrel API — FastAPI application."""
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,9 +8,14 @@ from fastapi import FastAPI
 from .database import init_db
 from .settings import settings
 
+logger = logging.getLogger("kestrel")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    logger.info("data_dir = %s", settings.data_dir)
+    logger.info("database = %s", settings.database_path)
     init_db()
     yield
 
