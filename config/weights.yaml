@@ -1,11 +1,20 @@
 # Kestrel — Scoring weights
-# skill_match is now a multiplicative factor, not additive.
-# These weights control the hygiene score (the five acceptability dimensions).
-# They don't need to sum to any particular number — they're relative.
+#
+# The composite score is: hygiene_score * skill_factor
+#
+# Hygiene weights control the five acceptability dimensions (relative, not summed).
+# Skill factor is multiplicative — it scales the hygiene score up or down.
 
-skill_match: 35       # kept for reference; used as multiplier not additive
+# ── Hygiene dimension weights (additive, relative) ──
 degree_posture: 20
 freshness: 15
 location_fit: 15
 seniority_fit: 10
 source_quality: 5
+
+# ── Skill factor curve (multiplicative) ──
+# factor = skill_floor + (1 - skill_floor) * (skill_score / 100) ^ skill_exponent
+# Tune skill_exponent: lower = more generous to partial matches.
+# Tune skill_floor: the minimum multiplier when skill_score is 0.
+skill_floor: 0.15
+skill_exponent: 0.6

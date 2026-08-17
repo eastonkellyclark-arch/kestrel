@@ -22,6 +22,17 @@ PROFILE = {
         "primary": ["typescript", "react", "nextjs", "nodejs", "postgresql"],
         "secondary": ["python", "redis", "docker", "ci/cd"],
         "bonus": ["c++", "supabase", "vite"],
+        "synonyms": {
+            "typescript": ["ts"],
+            "react": ["reactjs", "react.js"],
+            "nextjs": ["next.js", "next js"],
+            "nodejs": ["node.js", "node js", "node"],
+            "postgresql": ["postgres", "pg", "psql"],
+            "python": ["py"],
+            "docker": ["containerization", "containers"],
+            "ci/cd": ["ci cd", "cicd", "continuous integration"],
+            "c++": ["cpp", "cplusplus"],
+        },
     },
     "seniority": {
         "target": "mid",

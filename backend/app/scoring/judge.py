@@ -81,7 +81,7 @@ def score_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tup
     }
 
     # Hygiene score: weighted average of the five acceptability dimensions
-    hygiene_weights = {k: weights[k] for k in hygiene_dims}
+    hygiene_weights = {k: weights[k] for k in hygiene_dims if k in weights}
     hygiene_total = sum(hygiene_weights.values())
     hygiene_score = sum(
         hygiene_dims[dim] * hygiene_weights[dim] / hygiene_total
@@ -89,20 +89,14 @@ def score_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tup
     )
 
     # Skill factor: multiplicative, not additive.
-    # Curve: factor = 0.15 + 0.85 * (skill_score / 100) ^ 0.6
-    # This gives:
-    #   skill=0  → factor=0.15 (caps listing near bottom)
-    #   skill=10 → factor=0.49
-    #   skill=20 → factor=0.62
-    #   skill=30 → factor=0.72
-    #   skill=50 → factor=0.83
-    #   skill=70 → factor=0.92
-    #   skill=100 → factor=1.00
-    # Strong match barely scales; zero match collapses.
+    # factor = floor + (1 - floor) * (skill_score / 100) ^ exponent
+    # Tunable via weights.yaml: skill_floor and skill_exponent.
+    skill_floor = weights.get("skill_floor", 0.15)
+    skill_exponent = weights.get("skill_exponent", 0.6)
     if sm_score <= 0:
-        skill_factor = 0.15
+        skill_factor = skill_floor
     else:
-        skill_factor = 0.15 + 0.85 * (sm_score / 100.0) ** 0.6
+        skill_factor = skill_floor + (1.0 - skill_floor) * (sm_score / 100.0) ** skill_exponent
 
     composite = hygiene_score * skill_factor
 
@@ -115,7 +109,7 @@ def score_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tup
         "skill_factor": round(skill_factor, 3),
         "scale_label": f"scaled to {scale_pct}% for {'strong' if scale_pct >= 80 else ('moderate' if scale_pct >= 50 else 'low')} skill fit",
         "dimensions": {
-            "skill_match": {"score": round(sm_score, 1), "weight": weights.get("skill_match", 0)},
+            "skill_match": {"score": round(sm_score, 1)},
             **{
                 dim: {"score": round(hygiene_dims[dim], 1), "weight": weights.get(dim, 0)}
                 for dim in hygiene_dims
