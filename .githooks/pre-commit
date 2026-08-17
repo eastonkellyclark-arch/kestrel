@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook: block commits containing credential-like patterns.
+# Structural over policy — make the wrong thing impossible.
+
+set -euo pipefail
+
+# Patterns that look like secrets
+PATTERNS=(
+  # Generic key/token assignments
+  '["\x27](?:sk|pk|api|token|secret|password|auth|key)[-_]?[A-Za-z0-9]{20,}["\x27]'
+  # AWS
+  'AKIA[0-9A-Z]{16}'
+  # GitHub
+  'gh[pousr]_[A-Za-z0-9_]{36,}'
+  # Generic long hex/base64 secrets assigned to variables
+  '(?:API_KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL)\s*=\s*["\x27][A-Za-z0-9+/=_-]{16,}["\x27]'
+)
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+FAILED=0
+for pattern in "${PATTERNS[@]}"; do
+  # -P = Perl regex, -n = line numbers, -H = filenames
+  if echo "$STAGED" | xargs git diff --cached -U0 -- | grep -P -i "$pattern" 2>/dev/null; then
+    FAILED=1
+  fi
+done
+
+if [ "$FAILED" -ne 0 ]; then
+  echo ""
+  echo "=========================================================="
+  echo "  BLOCKED: Staged changes contain credential-like values."
+  echo "  Remove secrets before committing."
+  echo "=========================================================="
+  echo ""
+  exit 1
+fi
+
+exit 0
