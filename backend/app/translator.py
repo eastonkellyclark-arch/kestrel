@@ -9,6 +9,7 @@ import re
 from datetime import datetime
 
 from .database import get_connection
+from .desc_quality import classify as classify_description
 from .normalize import normalize_company, normalize_title
 from .remote_detect import detect_remote
 
@@ -80,6 +81,7 @@ def _parse_greenhouse(raw: dict, board_slug: str) -> dict | None:
         "department": department,
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
+        "description_quality": classify_description(description, title),
     }
 
 
@@ -152,6 +154,7 @@ def _parse_lever(raw: dict, board_slug: str) -> dict | None:
         "department": department,
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
+        "description_quality": classify_description(description, title),
     }
 
 
@@ -223,6 +226,7 @@ def translate_all() -> dict:
                     title_normalized, company_normalized,
                     description, url, posted_at, department,
                     is_remote, remote_confidence,
+                    description_quality,
                     created_at
                 ) VALUES (
                     :listing_type, :source, :source_id, :board_slug,
@@ -230,6 +234,7 @@ def translate_all() -> dict:
                     :title_normalized, :company_normalized,
                     :description, :url, :posted_at, :department,
                     :is_remote, :remote_confidence,
+                    :description_quality,
                     :created_at
                 )
                 """,

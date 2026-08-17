@@ -1,0 +1,68 @@
+# Kestrel — Job scoring profile
+# Edit this file and run rescore to reorder everything. Zero network calls.
+
+skills:
+  primary:
+    - typescript
+    - react
+    - nextjs
+    - next.js
+    - nodejs
+    - node.js
+    - postgresql
+    - postgres
+  secondary:
+    - python
+    - redis
+    - electron
+    - rest api
+    - rest apis
+    - api design
+    - cloud
+    - aws
+    - gcp
+    - azure
+    - docker
+    - ci/cd
+  bonus:
+    - c++
+    - cpp
+    - supabase
+    - vite
+    - job queue
+    - message queue
+    - rabbitmq
+    - bull
+    - marketing automation
+    - hubspot
+    - marketo
+
+seniority:
+  target: mid
+  # Titles containing these are penalized or boosted
+  too_senior:
+    - staff
+    - principal
+    - distinguished
+    - architect
+    - director
+    - vp
+    - vice president
+    - head of
+    - chief
+  too_junior:
+    - intern
+    - internship
+    - co-op
+    - new grad
+    - junior
+    - entry level
+    - entry-level
+
+dealbreakers:
+  - security clearance
+  - top secret
+  - ts/sci
+  - commission only
+  - commission-only
+  - 1099 only

@@ -75,9 +75,16 @@ def init_db() -> None:
             is_remote           INTEGER NOT NULL DEFAULT 0,
             remote_confidence   REAL NOT NULL DEFAULT 0.0,
 
+            -- Description quality: good, empty, title_only, non_english
+            description_quality TEXT NOT NULL DEFAULT 'good',
+
             -- Dedupe
             canonical_id        INTEGER REFERENCES listings(id),
             dedupe_score        REAL,
+
+            -- Scoring (Phase 3)
+            score               REAL,
+            score_breakdown     TEXT,  -- JSON per-dimension breakdown
 
             -- Status (Phase 6)
             status              TEXT NOT NULL DEFAULT 'new',
@@ -90,8 +97,9 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_listings_canonical ON listings(canonical_id);
         CREATE INDEX IF NOT EXISTS idx_listings_company_norm ON listings(company_normalized);
         CREATE INDEX IF NOT EXISTS idx_listings_type ON listings(listing_type);
+        CREATE INDEX IF NOT EXISTS idx_listings_score ON listings(score);
 
-        INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '2');
+        INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '3');
         """
     )
     conn.commit()

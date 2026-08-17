@@ -1,0 +1,9 @@
+# Kestrel — Job scoring weights
+# These must sum to 100. Edit and rescore to reorder.
+
+skill_match: 35
+degree_posture: 20
+freshness: 15
+location_fit: 15
+seniority_fit: 10
+source_quality: 5
