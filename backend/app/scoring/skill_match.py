@@ -1,10 +1,34 @@
-"""Skill match scorer (weight: 35).
+"""Skill match scorer.
 
 Scans title and description for skills from the profile.
 Primary skills score highest, then secondary, then bonus.
+Synonyms are expanded so "TS", "Node", "PG" etc. match their canonical forms.
 """
 
 import re
+
+# Synonym map: canonical skill → additional patterns to search for.
+# The canonical form from the profile is always searched; these are extras.
+SYNONYMS: dict[str, list[str]] = {
+    "typescript": ["ts"],
+    "react": ["reactjs", "react.js"],
+    "nextjs": ["next.js", "next js"],
+    "next.js": ["nextjs", "next js"],
+    "nodejs": ["node.js", "node js", "node"],
+    "node.js": ["nodejs", "node js", "node"],
+    "postgresql": ["postgres", "pg", "psql"],
+    "postgres": ["postgresql", "pg", "psql"],
+    "python": ["py"],
+    "redis": [],
+    "docker": ["containerization", "containers"],
+    "ci/cd": ["ci cd", "cicd", "continuous integration", "continuous deployment"],
+    "c++": ["cpp", "cplusplus"],
+    "cpp": ["c++", "cplusplus"],
+    "rest api": ["rest apis", "restful", "restful api"],
+    "rest apis": ["rest api", "restful", "restful api"],
+    "api design": ["api development"],
+    "javascript": ["js"],
+}
 
 
 def _find_skills(text: str, skill_list: list[str]) -> list[str]:
@@ -12,10 +36,17 @@ def _find_skills(text: str, skill_list: list[str]) -> list[str]:
     text_lower = text.lower()
     found = []
     for skill in skill_list:
-        # Word-boundary match, handling special chars like c++, next.js
+        # Try canonical form first
         escaped = re.escape(skill.lower())
         if re.search(r"(?<!\w)" + escaped + r"(?!\w)", text_lower):
             found.append(skill)
+            continue
+        # Try synonyms
+        for syn in SYNONYMS.get(skill.lower(), []):
+            escaped_syn = re.escape(syn)
+            if re.search(r"(?<!\w)" + escaped_syn + r"(?!\w)", text_lower):
+                found.append(skill)
+                break
     return found
 
 

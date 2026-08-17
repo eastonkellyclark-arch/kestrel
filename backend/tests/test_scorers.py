@@ -78,6 +78,26 @@ class TestSkillMatch:
         assert "c++" in d["bonus_hits"]
         assert "supabase" in d["bonus_hits"]
 
+    def test_synonyms_ts_node_pg(self):
+        s, d = skill_match.score(
+            "TS/Node Developer",
+            "Stack: TS, Node, PG, Redis.",
+            "good", PROFILE,
+        )
+        assert "typescript" in d["primary_hits"]
+        assert "nodejs" in d["primary_hits"]
+        assert "postgresql" in d["primary_hits"]
+        assert "redis" in d["secondary_hits"]
+
+    def test_synonym_react_js(self):
+        s, d = skill_match.score(
+            "Frontend Engineer",
+            "We use React.js and Next.js for our frontend.",
+            "good", PROFILE,
+        )
+        assert "react" in d["primary_hits"]
+        assert "nextjs" in d["primary_hits"] or "next.js" in d["primary_hits"]
+
 
 # ── degree_posture ───────────────────────────────────────────────────
 
@@ -201,13 +221,24 @@ class TestLocationFit:
         s, d = location_fit.score("Remote", True)
         assert s == 60.0
 
+    def test_canada_only_restriction(self):
+        """'CA Remote (BC & ON only)' is Canada, not US."""
+        s, d = location_fit.score("CA Remote (BC & ON only)", True)
+        assert s == 15.0
+        assert d["fit"] == "non_us_restricted"
+
+    def test_us_remote_with_us_paren(self):
+        """US states in parens should NOT trigger non-US restriction."""
+        s, d = location_fit.score("Remote, US (CA, NY, TX)", True)
+        assert s >= 85.0  # should be US remote
+
 
 # ── seniority_fit ────────────────────────────────────────────────────
 
 class TestSeniorityFit:
     def test_mid_implied(self):
         s, d = seniority_fit.score("Software Engineer", PROFILE)
-        assert s == 90.0
+        assert s == 100.0
 
     def test_mid_explicit(self):
         s, d = seniority_fit.score("Software Engineer II", PROFILE)
@@ -215,7 +246,7 @@ class TestSeniorityFit:
 
     def test_senior(self):
         s, d = seniority_fit.score("Senior Software Engineer", PROFILE)
-        assert s == 70.0
+        assert s == 100.0  # mid-senior accepted range
 
     def test_too_senior(self):
         s, d = seniority_fit.score("Staff Engineer", PROFILE)
@@ -228,6 +259,10 @@ class TestSeniorityFit:
     def test_director(self):
         s, d = seniority_fit.score("Director of Engineering", PROFILE)
         assert s == 30.0
+
+    def test_lead(self):
+        s, d = seniority_fit.score("Lead Software Engineer", PROFILE)
+        assert s == 100.0  # lead is accepted range
 
 
 # ── source_quality ───────────────────────────────────────────────────

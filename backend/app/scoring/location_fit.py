@@ -66,6 +66,15 @@ _NON_US_INDICATORS = re.compile(
 )
 
 
+# Parenthetical restrictions like "(BC & ON only)" indicating Canada-only
+_PAREN_RESTRICTION = re.compile(r"\([^)]*\b(?:only|only\))", re.IGNORECASE)
+_PAREN_NON_US = re.compile(
+    r"\([^)]*\b(?:BC|ON|AB|QC|MB|SK|NB|NS|PE|NL|NT|YT|NU|"
+    r"Canada|UK|EU|EMEA|APAC|LATAM)\b[^)]*\)",
+    re.IGNORECASE,
+)
+
+
 def score(
     location: str,
     is_remote: bool,
@@ -83,6 +92,12 @@ def score(
     # Check for Minnesota generally
     if _MINNESOTA.search(loc):
         return 95.0, {"fit": "state", "reason": "Minnesota"}
+
+    # Check for parenthetical non-US restrictions BEFORE US Remote check.
+    # "CA Remote (BC & ON only)" looks like US Remote but is Canada-only.
+    if _PAREN_NON_US.search(loc):
+        return 15.0, {"fit": "non_us_restricted",
+                       "reason": "Parenthetical restriction indicates non-US"}
 
     # Check for US Remote
     if _US_REMOTE.search(loc):

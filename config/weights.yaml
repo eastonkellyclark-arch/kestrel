@@ -1,7 +1,9 @@
-# Kestrel — Job scoring weights
-# These must sum to 100. Edit and rescore to reorder.
+# Kestrel — Scoring weights
+# skill_match is now a multiplicative factor, not additive.
+# These weights control the hygiene score (the five acceptability dimensions).
+# They don't need to sum to any particular number — they're relative.
 
-skill_match: 35
+skill_match: 35       # kept for reference; used as multiplier not additive
 degree_posture: 20
 freshness: 15
 location_fit: 15

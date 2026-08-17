@@ -72,8 +72,7 @@ def score_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tup
     sf_score, sf_detail = seniority_fit.score(row["title_display"], profile)
     sq_score, sq_detail = source_quality.score(row["source"])
 
-    dimensions = {
-        "skill_match": sm_score,
+    hygiene_dims = {
         "degree_posture": dp_score,
         "freshness": fr_score,
         "location_fit": lf_score,
@@ -81,18 +80,46 @@ def score_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tup
         "source_quality": sq_score,
     }
 
-    # Weighted composite
-    total_weight = sum(weights.values())
-    composite = sum(
-        dimensions[dim] * weights.get(dim, 0) / total_weight
-        for dim in dimensions
+    # Hygiene score: weighted average of the five acceptability dimensions
+    hygiene_weights = {k: weights[k] for k in hygiene_dims}
+    hygiene_total = sum(hygiene_weights.values())
+    hygiene_score = sum(
+        hygiene_dims[dim] * hygiene_weights[dim] / hygiene_total
+        for dim in hygiene_dims
     )
+
+    # Skill factor: multiplicative, not additive.
+    # Curve: factor = 0.15 + 0.85 * (skill_score / 100) ^ 0.6
+    # This gives:
+    #   skill=0  → factor=0.15 (caps listing near bottom)
+    #   skill=10 → factor=0.49
+    #   skill=20 → factor=0.62
+    #   skill=30 → factor=0.72
+    #   skill=50 → factor=0.83
+    #   skill=70 → factor=0.92
+    #   skill=100 → factor=1.00
+    # Strong match barely scales; zero match collapses.
+    if sm_score <= 0:
+        skill_factor = 0.15
+    else:
+        skill_factor = 0.15 + 0.85 * (sm_score / 100.0) ** 0.6
+
+    composite = hygiene_score * skill_factor
+
+    # Express the scaling as a readable percentage
+    scale_pct = round(skill_factor * 100)
 
     breakdown = {
         "composite": round(composite, 2),
+        "hygiene_score": round(hygiene_score, 1),
+        "skill_factor": round(skill_factor, 3),
+        "scale_label": f"scaled to {scale_pct}% for {'strong' if scale_pct >= 80 else ('moderate' if scale_pct >= 50 else 'low')} skill fit",
         "dimensions": {
-            dim: {"score": round(dimensions[dim], 1), "weight": weights.get(dim, 0)}
-            for dim in dimensions
+            "skill_match": {"score": round(sm_score, 1), "weight": weights.get("skill_match", 0)},
+            **{
+                dim: {"score": round(hygiene_dims[dim], 1), "weight": weights.get(dim, 0)}
+                for dim in hygiene_dims
+            },
         },
         "detail": {
             "skill_match": sm_detail,
@@ -197,17 +224,23 @@ def print_top_bottom(n: int = 20, per_company_cap: int | None = None) -> None:
             if deal:
                 print(f"         DEALBREAKER: {deal}")
             else:
-                parts = []
-                for dim_name in ["skill_match", "degree_posture", "freshness",
+                hygiene = bd.get("hygiene_score", 0)
+                factor = bd.get("skill_factor", 0)
+                scale_label = bd.get("scale_label", "")
+                sm_d = dims.get("skill_match", {})
+                print(f"         Hygiene: {hygiene:.0f} x {factor:.0%} skill factor = {row['score']:.1f}  ({scale_label})")
+
+                hyg_parts = []
+                for dim_name in ["degree_posture", "freshness",
                                  "location_fit", "seniority_fit", "source_quality"]:
                     d = dims.get(dim_name, {})
-                    parts.append(f"{dim_name}={d.get('score', 0):.0f}x{d.get('weight', 0)}")
-                print(f"         {', '.join(parts)}")
+                    hyg_parts.append(f"{dim_name}={d.get('score', 0):.0f}")
+                print(f"         Hygiene dims: {', '.join(hyg_parts)}")
+                print(f"         Skill match: {sm_d.get('score', 0):.0f}/100")
 
-                # Show skill hits if any
                 detail = bd.get("detail", {})
                 sm = detail.get("skill_match", {})
-                hits = sm.get("primary_hits", []) + sm.get("secondary_hits", [])
+                hits = sm.get("primary_hits", []) + sm.get("secondary_hits", []) + sm.get("bonus_hits", [])
                 if hits:
                     print(f"         Skills: {', '.join(hits)}")
 

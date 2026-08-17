@@ -38,13 +38,13 @@ skills:
     - marketo
 
 seniority:
-  target: mid
-  # Titles containing these are penalized or boosted
+  target: mid-senior
+  # Mid and Senior are accepted range — no penalty.
+  # Staff/Principal/Director are too senior. Intern/Junior too junior.
   too_senior:
     - staff
     - principal
     - distinguished
-    - architect
     - director
     - vp
     - vice president
