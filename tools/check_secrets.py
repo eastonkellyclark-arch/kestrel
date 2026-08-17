@@ -25,8 +25,9 @@ PATTERNS = [
 
 COMPILED = [re.compile(p, re.IGNORECASE) for p in PATTERNS]
 
-# Files that are expected to contain pattern-like strings (this script, tests)
-ALLOW_LIST = {"tools/check_secrets.py"}
+# Lines containing this marker are intentionally exempt (e.g. test fixtures).
+# Every exemption is visible in the diff and reviewable.
+PRAGMA = "# pragma: allowlist secret"
 
 
 def get_staged_diff() -> list[tuple[str, str]]:
@@ -41,8 +42,6 @@ def get_staged_diff() -> list[tuple[str, str]]:
 
     pairs = []
     for fname in filenames:
-        if fname in ALLOW_LIST:
-            continue
         diff = subprocess.run(
             ["git", "diff", "--cached", "-U0", "--", fname],
             capture_output=True, text=True, check=True,
@@ -55,14 +54,15 @@ def scan(pairs: list[tuple[str, str]]) -> list[str]:
     """Return human-readable hits."""
     hits = []
     for fname, diff_text in pairs:
-        for line_num, line in enumerate(diff_text.splitlines(), 1):
+        for line in diff_text.splitlines():
             if not line.startswith("+") or line.startswith("+++"):
                 continue
+            if PRAGMA in line:
+                continue
             for pattern in COMPILED:
-                match = pattern.search(line)
-                if match:
+                if pattern.search(line):
                     hits.append(f"  {fname}: {line.strip()}")
-                    break  # one hit per line is enough
+                    break
     return hits
 
 

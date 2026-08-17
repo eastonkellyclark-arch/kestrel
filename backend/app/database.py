@@ -20,18 +20,37 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Create tables if they don't exist. Phase 0 creates only the meta table."""
+    """Create all tables if they don't exist."""
     conn = get_connection()
-    conn.execute(
+    conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS _meta (
             key   TEXT PRIMARY KEY,
             value TEXT NOT NULL
-        )
+        );
+
+        CREATE TABLE IF NOT EXISTS registry (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            company     TEXT NOT NULL,
+            platform    TEXT NOT NULL,
+            board_slug  TEXT NOT NULL,
+            active      INTEGER NOT NULL DEFAULT 1,
+            added_date  TEXT NOT NULL,
+            UNIQUE(platform, board_slug)
+        );
+
+        CREATE TABLE IF NOT EXISTS raw_listings (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            source      TEXT NOT NULL,
+            board_slug  TEXT NOT NULL,
+            source_id   TEXT NOT NULL,
+            raw_json    TEXT NOT NULL,
+            fetched_at  TEXT NOT NULL,
+            UNIQUE(source, source_id)
+        );
+
+        INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '1');
         """
-    )
-    conn.execute(
-        "INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '0')"
     )
     conn.commit()
     conn.close()
