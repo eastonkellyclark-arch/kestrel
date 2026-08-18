@@ -1,16 +1,14 @@
 """Classifies gig posts as demand (someone hiring) vs supply (someone advertising).
 
-Competitors posting "[FOR HIRE] I'm a React developer" match the same keywords
-as real gigs — skill scoring can't tell them apart. This filter separates them
-before scoring so only demand posts become scored listings.
+Returns (classification, confidence):
+  - ("demand", 1.0)   — explicit [HIRING] tag, definitive
+  - ("supply", 1.0)   — explicit [FOR HIRE] tag, definitive
+  - ("demand", 0.7)   — demand language without supply language
+  - ("supply", 0.7)   — supply language without demand language
+  - ("demand", 0.5)   — more demand phrases than supply
+  - ("ambiguous", 0.3) — can't tell
 
-Supply posts are stored in the vault and translated, but marked
-description_quality="supply_post" so the scorer treats them as zero-value.
-
-Three detection layers:
-1. Explicit tags: [HIRING] vs [FOR HIRE], [SEEKING FREELANCER] vs [SEEKING WORK]
-2. Demand language: "I need", "looking for", "we're hiring", budget mentions
-3. Supply language: "I am a", "I offer", "my rates", "portfolio"
+Confidence shown in the desk so ambiguous cases can be eyeballed.
 """
 
 import re
@@ -55,32 +53,34 @@ _SUPPLY_PHRASES = re.compile(
 )
 
 
-def classify(title: str, description: str) -> str:
-    """Return 'demand', 'supply', or 'ambiguous'.
+def classify(title: str, description: str) -> tuple[str, float]:
+    """Return (classification, confidence).
 
-    demand = someone wants to hire (this is a real gig)
-    supply = someone advertising themselves (competitor)
-    ambiguous = can't tell (score normally, lower confidence)
+    classification: 'demand', 'supply', or 'ambiguous'
+    confidence: 0.0-1.0
     """
     text = f"{title} {description}"
 
     # Layer 1: explicit tags are definitive
     if _DEMAND_TAGS.search(title):
-        return "demand"
+        return "demand", 1.0
     if _SUPPLY_TAGS.search(title):
-        return "supply"
+        return "supply", 1.0
 
     # Layer 2 & 3: count phrase matches
     demand_hits = len(_DEMAND_PHRASES.findall(text))
     supply_hits = len(_SUPPLY_PHRASES.findall(text))
 
     if demand_hits > 0 and supply_hits == 0:
-        return "demand"
+        return "demand", 0.7
     if supply_hits > 0 and demand_hits == 0:
-        return "supply"
+        return "supply", 0.7
     if demand_hits > supply_hits:
-        return "demand"
+        return "demand", 0.5
     if supply_hits > demand_hits:
-        return "supply"
+        return "supply", 0.5
 
-    return "ambiguous"
+    # Both present equally, or neither
+    if demand_hits > 0:
+        return "ambiguous", 0.3
+    return "ambiguous", 0.3

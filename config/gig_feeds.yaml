@@ -32,5 +32,7 @@ craigslist:
     label: craigslist-mpls-small-biz
 
 # HN Freelancer thread — monthly, via Algolia API
+# 15-33 comments/month, mostly SEEKING WORK (supply, not demand).
+# Enabled but low-value. Disable if noise exceeds signal.
 hn_freelancer:
   enabled: true

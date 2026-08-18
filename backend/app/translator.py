@@ -603,11 +603,11 @@ def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
     )
 
     # Classify demand vs supply
-    gig_class = classify_demand(title, desc_plain)
+    gig_class, gig_confidence = classify_demand(title, desc_plain)
     desc_quality = classify_description(desc_plain, title)
 
     # Supply posts: mark so scorer treats them as zero-value.
-    # Still stored — can see what was classified and override if wrong.
+    # Ambiguous posts scored normally but tagged for desk review.
     if gig_class == "supply":
         desc_quality = "supply_post"
 
@@ -626,7 +626,7 @@ def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
         "description": description,
         "url": url,
         "posted_at": posted_at,
-        "department": "",
+        "department": f"{gig_class}:{gig_confidence:.1f}",
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
         "description_quality": desc_quality,
