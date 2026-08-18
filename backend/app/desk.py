@@ -49,6 +49,15 @@ class SniffRequest(BaseModel):
     url: str
 
 
+# ── Adzuna budget ────────────────────────────────────────────────────
+
+@router.get("/budget/adzuna")
+def adzuna_budget():
+    """Current Adzuna API call budget status."""
+    from .adapters.adzuna import get_budget_status
+    return get_budget_status()
+
+
 # ── Sniffer ──────────────────────────────────────────────────────────
 
 @router.post("/sniff")

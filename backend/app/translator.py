@@ -192,9 +192,133 @@ def _parse_lever(raw: dict, board_slug: str) -> dict | None:
     }
 
 
+def _parse_adzuna(raw: dict, board_slug: str) -> dict | None:
+    """Parse an Adzuna raw job record."""
+    source_id = str(raw.get("id", ""))
+    if not source_id:
+        return None
+
+    title = raw.get("title", "").strip()
+    if not title:
+        return None
+
+    company_data = raw.get("company", {})
+    company = company_data.get("display_name", "") if isinstance(company_data, dict) else str(company_data)
+    if not company:
+        company = "Unknown"
+
+    location_data = raw.get("location", {})
+    if isinstance(location_data, dict):
+        area = location_data.get("area", [])
+        location = ", ".join(area) if area else location_data.get("display_name", "")
+    else:
+        location = str(location_data)
+
+    # Adzuna descriptions are truncated snippets
+    raw_desc = raw.get("description", "") or ""
+    description = _sanitize_html(raw_desc)
+    desc_plain = _strip_html(raw_desc)
+
+    url = raw.get("redirect_url", "")
+    posted_at = raw.get("created", "")
+    if posted_at:
+        posted_at = posted_at[:19]
+
+    is_remote, remote_conf = detect_remote(
+        location=location, title=title, description=desc_plain,
+    )
+
+    return {
+        "source": "adzuna",
+        "source_id": source_id,
+        "board_slug": board_slug,
+        "listing_type": "job",
+        "title_display": title,
+        "company_display": company,
+        "location_display": location,
+        "title_normalized": normalize_title(title),
+        "company_normalized": normalize_company(company),
+        "description": description,
+        "url": url,
+        "posted_at": posted_at,
+        "department": "",
+        "is_remote": int(is_remote),
+        "remote_confidence": remote_conf,
+        "description_quality": classify_description(desc_plain, title),
+    }
+
+
+def _parse_usajobs(raw: dict, board_slug: str) -> dict | None:
+    """Parse a USAJobs raw result item."""
+    match = raw.get("MatchedObjectDescriptor", raw)
+    source_id = str(match.get("PositionID", ""))
+    if not source_id:
+        return None
+
+    title = match.get("PositionTitle", "").strip()
+    if not title:
+        return None
+
+    company = match.get("OrganizationName", match.get("DepartmentName", ""))
+
+    location_names = match.get("PositionLocation", [])
+    if isinstance(location_names, list) and location_names:
+        location = "; ".join(
+            loc.get("LocationName", "") for loc in location_names if isinstance(loc, dict)
+        )
+    else:
+        location = str(location_names)
+
+    raw_desc = match.get("UserArea", {}).get("Details", {}).get("MajorDuties", [])
+    if isinstance(raw_desc, list):
+        description = "<ul>" + "".join(f"<li>{d}</li>" for d in raw_desc) + "</ul>"
+        desc_plain = "\n".join(raw_desc)
+    else:
+        description = str(raw_desc)
+        desc_plain = _strip_html(description)
+
+    # Also include qualifications
+    quals = match.get("QualificationSummary", "")
+    if quals:
+        description += f"\n<h3>Qualifications</h3>\n<p>{quals}</p>"
+        desc_plain += f"\n{quals}"
+
+    url = match.get("PositionURI", match.get("ApplyURI", [""])[0] if isinstance(match.get("ApplyURI"), list) else "")
+    posted_at = match.get("PublicationStartDate", "")
+    if posted_at:
+        posted_at = posted_at[:19]
+
+    is_remote, remote_conf = detect_remote(
+        location=location, title=title, description=desc_plain,
+    )
+
+    return {
+        "source": "usajobs",
+        "source_id": source_id,
+        "board_slug": board_slug,
+        "listing_type": "job",
+        "title_display": title,
+        "company_display": company,
+        "location_display": location,
+        "title_normalized": normalize_title(title),
+        "company_normalized": normalize_company(company),
+        "description": description,
+        "url": url,
+        "posted_at": posted_at,
+        "department": "",
+        "is_remote": int(is_remote),
+        "remote_confidence": remote_conf,
+        "description_quality": classify_description(desc_plain, title),
+    }
+
+
 PARSERS = {
     "greenhouse": _parse_greenhouse,
     "lever": _parse_lever,
+    "adzuna": _parse_adzuna,
+    "usajobs": _parse_usajobs,
+    "ashby": _parse_greenhouse,  # Ashby uses same structure as Greenhouse
+    "recruitee": _parse_greenhouse,  # placeholder — will need its own parser
 }
 
 
