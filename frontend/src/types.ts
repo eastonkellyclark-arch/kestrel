@@ -15,6 +15,12 @@ export interface ListingSummary {
   skill_factor: number | null;
   scale_label: string | null;
   experience_required: number | null;
+  profiles?: Record<string, {
+    score: number;
+    skill_factor: number | null;
+    scale_label: string | null;
+    hygiene_score: number | null;
+  }>;
 }
 
 export interface BreakdownDetail {

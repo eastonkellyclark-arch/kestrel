@@ -211,6 +211,16 @@ async function loadListings() {
       </select></td>
       <td><button class="secondary" onclick="showNoteForm(${l.id})" style="font-size:0.72rem">+ Note</button></td>
     </tr>
+    <tr id="resume-pick-${l.id}" style="display:none"><td colspan="6">
+      <div class="inline-form">
+        <span style="font-size:0.75rem;color:var(--text-muted)">Resume used:</span>
+        <select id="resume-sel-${l.id}" style="font-size:0.75rem">
+          <option value="">None</option>
+          ${cachedResumes.map(r => `<option value="${r.id}">${r.label} (${r.profile_name})</option>`).join('')}
+        </select>
+        <button onclick="confirmApplied(${l.id})" style="font-size:0.72rem">Confirm</button>
+      </div>
+    </td></tr>
     <tr id="note-row-${l.id}" style="display:none"><td colspan="6">
       <div class="inline-form">
         <input type="text" id="note-input-${l.id}" placeholder="Add a note..." style="flex:1">
@@ -219,23 +229,40 @@ async function loadListings() {
     </td></tr>`).join(''));
 }
 
-async function changeStatus(id, status) {
-  let resume_id = null;
-  if (status === 'applied') {
-    // Prompt for resume selection
+let cachedResumes = [];
+async function ensureResumesLoaded() {
+  if (cachedResumes.length === 0) {
     const r = await fetch(API + '/desk/resumes');
     const d = await r.json();
-    if (d.resumes.length > 0) {
-      const opts = d.resumes.map(r => `${r.id}: ${r.label} (${r.profile_name})`).join('\\n');
-      const pick = prompt('Which resume did you use? Enter ID or leave blank:\\n' + opts);
-      if (pick && !isNaN(parseInt(pick))) resume_id = parseInt(pick);
+    cachedResumes = d.resumes;
+  }
+}
+
+async function changeStatus(id, status) {
+  if (status === 'applied') {
+    await ensureResumesLoaded();
+    if (cachedResumes.length > 0) {
+      // Show inline resume picker
+      const row = document.getElementById('resume-pick-' + id);
+      if (row) { row.style.display = ''; return; }
     }
   }
   await fetch(API + `/desk/listings/${id}/status`, {
     method: 'PATCH', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({status, resume_id})
+    body: JSON.stringify({status})
   });
   flash('Status updated');
+  loadPipeline(); loadListings();
+}
+
+async function confirmApplied(id) {
+  const sel = document.getElementById('resume-sel-' + id);
+  const resume_id = sel && sel.value ? parseInt(sel.value) : null;
+  await fetch(API + `/desk/listings/${id}/status`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status: 'applied', resume_id})
+  });
+  flash('Applied with resume');
   loadPipeline(); loadListings();
 }
 

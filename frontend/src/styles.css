@@ -76,11 +76,20 @@ body {
 }
 
 .profile-chip {
+  font-family: inherit;
   font-size: 0.72rem;
   padding: 0.2rem 0.5rem;
   border-radius: 12px;
   border: 1px solid var(--border);
   color: var(--text-dim);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.profile-chip:hover {
+  border-color: var(--text-muted);
+  color: var(--text-muted);
 }
 
 .profile-chip.active {

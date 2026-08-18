@@ -20,7 +20,30 @@ logger = logging.getLogger("kestrel.export")
 
 
 def export_public(output_dir: Path) -> int:
-    """Export scored canonical listings to split JSON files. Returns count."""
+    """Export scored canonical listings with per-profile scores.
+
+    Each listing in the index carries scores for ALL profiles so the
+    showroom can switch rankings client-side with no backend.
+    """
+    from .scoring.judge import (
+        _load_profile_yaml, score_listing, score_gig_listing, _PROFILES_DIR,
+    )
+    from datetime import datetime as dt
+
+    # Load all profiles
+    profiles_index = _load_profile_yaml("profiles.yaml")
+    active_name = profiles_index.get("active", "fullstack")
+    all_profiles = {}
+    for pname, pinfo in profiles_index.get("profiles", {}).items():
+        profile_path = _PROFILES_DIR / pinfo["profile"]
+        weights_path = _PROFILES_DIR / pinfo["weights"]
+        import yaml
+        with open(profile_path, encoding="utf-8") as f:
+            profile = yaml.safe_load(f)
+        with open(weights_path, encoding="utf-8") as f:
+            weights = yaml.safe_load(f)
+        all_profiles[pname] = (pinfo.get("label", pname), profile, weights)
+
     conn = get_connection()
     rows = conn.execute(
         """
@@ -28,9 +51,9 @@ def export_public(output_dir: Path) -> int:
                company_display, title_display, location_display,
                department, url, posted_at,
                is_remote, remote_confidence, description_quality,
-               description,
+               description, description_quality,
                score, score_breakdown, degree_hard_required,
-               experience_required
+               experience_required, bid_count
         FROM listings
         WHERE canonical_id IS NULL AND score IS NOT NULL
         ORDER BY score DESC
@@ -44,11 +67,36 @@ def export_public(output_dir: Path) -> int:
         shutil.rmtree(listings_dir)
     listings_dir.mkdir(parents=True, exist_ok=True)
 
+    now = dt.utcnow()
     index_entries = []
     for row in rows:
         record = dict(row)
         listing_id = record["id"]
         breakdown = json.loads(record["score_breakdown"]) if record["score_breakdown"] else {}
+
+        # Score this listing under each profile
+        # Gigs use gig weights (budget_signal etc.), job profiles don't have those.
+        # Load gig weights once for gig listings.
+        profile_scores = {}
+        for pname, (plabel, profile, weights) in all_profiles.items():
+            lt = record["listing_type"]
+            if lt == "gig":
+                # Gigs always use gig weights — the profile only changes skills/experience
+                try:
+                    gig_weights_path = _PROFILES_DIR.parent / "gig_weights.yaml"
+                    with open(gig_weights_path, encoding="utf-8") as f:
+                        gig_w = yaml.safe_load(f)
+                except FileNotFoundError:
+                    gig_w = weights
+                composite, bd = score_gig_listing(record, profile, gig_w, now)
+            else:
+                composite, bd = score_listing(record, profile, weights, now)
+            profile_scores[pname] = {
+                "score": composite,
+                "skill_factor": bd.get("skill_factor"),
+                "scale_label": bd.get("scale_label"),
+                "hygiene_score": bd.get("hygiene_score"),
+            }
 
         # Index entry: summary without description
         index_entries.append({
@@ -68,6 +116,7 @@ def export_public(output_dir: Path) -> int:
             "skill_factor": breakdown.get("skill_factor"),
             "scale_label": breakdown.get("scale_label"),
             "experience_required": record["experience_required"],
+            "profiles": profile_scores,
         })
 
         # Per-listing detail file: full description + breakdown

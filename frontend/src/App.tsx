@@ -34,6 +34,7 @@ type AppState =
 
 function App() {
   const [state, setState] = useState<AppState>({ kind: 'loading' });
+  const [activeProfile, setActiveProfile] = useState<string>('');
   const [filters, setFilters] = useState<Filters>({
     listingType: 'all',
     remote: null,
@@ -52,7 +53,10 @@ function App() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then((data: IndexData) => setState({ kind: 'loaded', data }))
+      .then((data: IndexData) => {
+        setState({ kind: 'loaded', data });
+        setActiveProfile(data.active_profile || '');
+      })
       .catch(err => setState({ kind: 'error', message: err.message }));
   }, []);
 
@@ -72,7 +76,16 @@ function App() {
 
   const filtered = useMemo(() => {
     if (state.kind !== 'loaded') return [];
-    let items = state.data.listings;
+    let items = state.data.listings.map(l => {
+      // Override score/scale_label with the active profile's values
+      if (activeProfile && l.profiles?.[activeProfile]) {
+        const ps = l.profiles[activeProfile];
+        return { ...l, score: ps.score, skill_factor: ps.skill_factor,
+                 scale_label: ps.scale_label, hygiene_score: ps.hygiene_score };
+      }
+      return l;
+    });
+
     const { listingType, remote, minScore, degreeNotRequired, entryLevel, search } = filters;
 
     if (listingType !== 'all') items = items.filter(l => l.listing_type === listingType);
@@ -91,8 +104,11 @@ function App() {
         (l.location ?? '').toLowerCase().includes(q)
       );
     }
+
+    // Re-sort by the active profile's score
+    items.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
     return items;
-  }, [state, filters]);
+  }, [state, filters, activeProfile]);
 
   if (state.kind === 'loading') {
     return (
@@ -132,9 +148,14 @@ function App() {
           <div className="profile-demo">
             <span className="profile-label">Ranked for:</span>
             {state.data.profiles.map(p => (
-              <span key={p.name} className={`profile-chip ${p.active ? 'active' : ''}`}>
+              <button
+                key={p.name}
+                type="button"
+                className={`profile-chip ${activeProfile === p.name ? 'active' : ''}`}
+                onClick={() => setActiveProfile(p.name)}
+              >
                 {p.label}
-              </span>
+              </button>
             ))}
           </div>
         )}
