@@ -46,6 +46,8 @@ jobs:
       - name: Fetch all sources
         id: fetch
         run: |
+          # Start fresh — schema may have changed since last committed DB
+          rm -f data/kestrel.db
           python -c "
           import logging, json, sys
           logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
