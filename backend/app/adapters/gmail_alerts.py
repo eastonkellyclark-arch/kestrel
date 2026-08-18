@@ -29,7 +29,8 @@ ALERT_SENDERS = {
         "parser": "_parse_linkedin_alert",
     },
     "indeed": {
-        "from_patterns": ["alert@indeed.com", "noreply@indeed.com"],
+        "from_patterns": ["alert@indeed.com", "noreply@indeed.com",
+                          "donotreply@match.indeed.com", "no-reply@indeed.com"],
         "parser": "_parse_indeed_alert",
     },
     "ziprecruiter": {
