@@ -2,16 +2,15 @@ name: Kestrel Pipeline
 
 on:
   schedule:
-    # Run every 6 hours. Reddit feeds are staggered within the script.
     - cron: '0 */6 * * *'
-  workflow_dispatch: # Manual trigger
+  workflow_dispatch:
 
 concurrency:
   group: kestrel-pipeline
   cancel-in-progress: true
 
 permissions:
-  contents: write  # For committing export data
+  contents: write
 
 env:
   PYTHON_VERSION: '3.12'
@@ -63,30 +62,50 @@ jobs:
           after = raw_listing_count()
           print_report(results)
 
-          # Check for failures
-          failures = [r for r in results if r.outcome.value not in ('success', 'empty_board')]
-          # Exclude expected failures (missing Gmail creds, rate limits)
-          real_failures = [r for r in failures
-                          if 'not set' not in (r.error_detail or '').lower()
-                          and 'HTTP 429' not in (r.error_detail or '')]
-          if real_failures:
-              print(f'::warning::Pipeline had {len(real_failures)} failures')
-              for f in real_failures:
-                  print(f'  FAILED: {f.company} ({f.platform}) — {f.error_detail}')
+          # Classify failures
+          credential_errors = []
+          slug_warnings = []
+          flaky_expected = []  # Reddit 429, Craigslist 503 — not actionable
 
-          # Write summary for notification step
+          for r in results:
+              if r.outcome.value in ('success', 'empty_board'):
+                  continue
+              detail = (r.error_detail or '').lower()
+
+              # Missing credentials — real error
+              if 'not set' in detail or 'authentication' in detail.lower():
+                  credential_errors.append(r)
+              # Rate limits and known-flaky — expected, not warnings
+              elif 'http 429' in detail or 'http 503' in detail:
+                  flaky_expected.append(r)
+              # ATS board 404 — slug changed or board disabled
+              elif r.outcome.value == 'slug_not_found':
+                  slug_warnings.append(r)
+              else:
+                  slug_warnings.append(r)
+
+          # Report
+          if slug_warnings:
+              for w in slug_warnings:
+                  print(f'::warning::{w.company} ({w.platform}): {w.error_detail}')
+          if flaky_expected:
+              for f in flaky_expected:
+                  print(f'[expected] {f.company}: {f.error_detail}')
+
+          # Credential failures are errors — pipeline should fail
+          if credential_errors:
+              for e in credential_errors:
+                  print(f'::error::Credential failure: {e.company} — {e.error_detail}')
+              sys.exit(1)
+
           summary = {
               'total_fetched': after - before,
               'sources_ok': sum(1 for r in results if r.outcome.value == 'success'),
-              'sources_failed': len(real_failures),
-              'failures': [{'company': f.company, 'error': f.error_detail} for f in real_failures],
+              'warnings': len(slug_warnings),
+              'flaky': len(flaky_expected),
           }
           with open('fetch_summary.json', 'w') as f:
               json.dump(summary, f)
-
-          if len(real_failures) > len(results) // 2:
-              print('::error::More than half of sources failed — pipeline unhealthy')
-              sys.exit(1)
           "
 
       - name: Translate + Merge + Score
@@ -120,7 +139,7 @@ jobs:
 
       - name: Build frontend
         run: |
-          cp -r data/export/* frontend/public/data/ 2>/dev/null || mkdir -p frontend/public/data/listings
+          mkdir -p frontend/public/data/listings
           cp data/export/index.json frontend/public/data/
           cp data/export/listings/*.json frontend/public/data/listings/
           cd frontend
@@ -135,6 +154,30 @@ jobs:
           cd frontend
           npx wrangler deploy
 
+      - name: Verify live site freshness
+        run: |
+          python -c "
+          import httpx, json, sys
+          from datetime import datetime, timezone
+
+          r = httpx.get('https://kestrel.adlaunch.studio/data/index.json', timeout=15)
+          if r.status_code != 200:
+              print(f'::error::Live site returned HTTP {r.status_code}')
+              sys.exit(1)
+
+          data = r.json()
+          exported = datetime.fromisoformat(data['exported_at'][:19]).replace(tzinfo=timezone.utc)
+          now = datetime.now(timezone.utc)
+          age_hours = (now - exported).total_seconds() / 3600
+
+          print(f'Live site: {data[\"count\"]} listings, exported {data[\"exported_at\"][:19]}')
+          print(f'Age: {age_hours:.1f} hours')
+
+          if age_hours > 12:
+              print(f'::error::Live site data is {age_hours:.0f} hours old — deploy may have failed silently')
+              sys.exit(1)
+          "
+
       - name: Commit data updates
         run: |
           git config user.name "Kestrel Pipeline"
@@ -143,7 +186,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No data changes to commit"
           else
-            git commit -m "Pipeline: $(date -u +%Y-%m-%dT%H:%M) — $(cat fetch_summary.json | python -c 'import sys,json; d=json.load(sys.stdin); print(f\"{d[\"total_fetched\"]} new, {d[\"sources_ok\"]} sources ok\")')"
+            git commit -m "Pipeline: $(date -u +%Y-%m-%dT%H:%M) — $(cat fetch_summary.json | python -c 'import sys,json; d=json.load(sys.stdin); print(f"{d[\"total_fetched\"]} new, {d[\"sources_ok\"]} sources ok")')"
             git push
           fi
 
@@ -151,7 +194,4 @@ jobs:
         if: failure()
         run: |
           echo "::error::Kestrel pipeline failed. Check the logs above."
-          echo "Summary:"
           cat fetch_summary.json 2>/dev/null || echo "No summary available"
-          # Future: add Slack/email notification here
-

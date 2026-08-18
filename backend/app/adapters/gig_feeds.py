@@ -220,7 +220,7 @@ def fetch_all_gig_feeds() -> list[FetchResult]:
         if not url:
             continue
         if i > 0:
-            time.sleep(2)  # respect rate limit between feeds
+            time.sleep(5)  # Reddit rate limit: ~1 req/min per feed
         logger.info("Fetching Reddit: %s...", label)
         results.append(_fetch_rss(url, "reddit", label))
 

@@ -22,14 +22,10 @@ reddit:
   - url: https://www.reddit.com/r/minneapolis/new.rss
     label: r/minneapolis
 
-# Craigslist via Open RSS proxy
-craigslist:
-  - url: https://openrss.org/minneapolis.craigslist.org/search/cpg
-    label: craigslist-mpls-computer-gigs
-  - url: https://openrss.org/minneapolis.craigslist.org/search/crg
-    label: craigslist-mpls-creative-gigs
-  - url: https://openrss.org/minneapolis.craigslist.org/search/sbs
-    label: craigslist-mpls-small-biz
+# Craigslist — DISABLED.
+# Open RSS proxy returns 503, native Craigslist RSS returns 403.
+# Craigslist has blocked programmatic RSS access as of Aug 2026.
+craigslist: []
 
 # HN Freelancer thread — disabled.
 # 15-33 comments/month, mostly SEEKING WORK (supply, not demand).

@@ -77,6 +77,14 @@ body {
   color: var(--accent);
 }
 
+.stale-warning {
+  color: var(--amber);
+}
+
+.stale-badge {
+  font-weight: 600;
+}
+
 /* ── State screens ─────────────────────────── */
 
 .state-screen {

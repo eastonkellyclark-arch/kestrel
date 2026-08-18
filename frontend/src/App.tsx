@@ -7,6 +7,26 @@ import './styles.css';
 
 const DATA_BASE = import.meta.env.BASE_URL + 'data';
 
+function FooterTimestamp({ exportedAt, count }: { exportedAt: string; count: number }) {
+  const exported = new Date(exportedAt);
+  const ageMs = Date.now() - exported.getTime();
+  const ageHours = ageMs / (1000 * 60 * 60);
+  const stale = ageHours > 24;
+
+  let ageText: string;
+  if (ageHours < 1) ageText = 'just now';
+  else if (ageHours < 24) ageText = `${Math.floor(ageHours)}h ago`;
+  else if (ageHours < 48) ageText = 'yesterday';
+  else ageText = `${Math.floor(ageHours / 24)}d ago`;
+
+  return (
+    <p className={stale ? 'stale-warning' : ''}>
+      {count} listings &middot; Updated {ageText}
+      {stale && <span className="stale-badge"> — data may be stale</span>}
+    </p>
+  );
+}
+
 type AppState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
@@ -131,10 +151,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>
-          {state.data.count} listings &middot; Updated{' '}
-          {new Date(state.data.exported_at).toLocaleDateString()}
-        </p>
+        <FooterTimestamp exportedAt={state.data.exported_at} count={state.data.count} />
         <p className="attribution">
           Remote listings powered by{' '}
           <a href="https://weworkremotely.com" target="_blank" rel="noopener noreferrer">We Work Remotely</a>
