@@ -110,5 +110,67 @@ def sniff(url: str, timeout: float = 15.0) -> SniffResult:
             return SniffResult(url, platform, slug, confidence,
                                f"HTML contains {platform} embed/reference")
 
+    # Step 4: Slug-guess fallback — derive candidate slugs from the domain
+    # and probe each ATS API directly. Catches JS-rendered embeds.
+    slug_guesses = _derive_slug_guesses(url)
+    if slug_guesses:
+        probe_result = _probe_ats_apis(url, slug_guesses, timeout)
+        if probe_result:
+            return probe_result
+
     return SniffResult(url, None, None, "failed",
-                       "No recognized ATS pattern found in URL or page HTML")
+                       "No recognized ATS pattern found in URL, page HTML, or API probe")
+
+
+def _derive_slug_guesses(url: str) -> list[str]:
+    """Extract candidate board slugs from a URL's domain name."""
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    host = parsed.hostname or ""
+    # Strip common prefixes/suffixes
+    parts = host.replace("www.", "").replace("careers.", "").replace("jobs.", "").split(".")
+    if not parts:
+        return []
+    base = parts[0]  # e.g. "cloudflare" from "www.cloudflare.com"
+    guesses = [base]
+    # Also try without hyphens and with common suffixes
+    if "-" in base:
+        guesses.append(base.replace("-", ""))
+    # Try "companyinc", "companyhq" variants
+    guesses.append(base + "inc")
+    guesses.append(base + "hq")
+    return guesses
+
+
+# ATS API probe endpoints: (platform, url_template, response_validator)
+_PROBE_ENDPOINTS = [
+    ("greenhouse", "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs",
+     lambda d: "jobs" in d),
+    ("lever", "https://api.lever.co/v0/postings/{slug}?mode=json",
+     lambda d: isinstance(d, list)),
+    ("ashby", "https://api.ashbyhq.com/posting-api/job-board/{slug}",
+     lambda d: "jobs" in d),
+    # Workable uses POST on v2; the probe uses v1 account info endpoint instead
+    ("workable", "https://apply.workable.com/api/v1/accounts/{slug}",
+     lambda d: "subdomain" in d),
+]
+
+
+def _probe_ats_apis(original_url: str, slugs: list[str], timeout: float) -> SniffResult | None:
+    """Try each slug against each ATS API. Return first hit."""
+    for slug in slugs:
+        for platform, url_template, validator in _PROBE_ENDPOINTS:
+            probe_url = url_template.format(slug=slug)
+            try:
+                resp = httpx.get(probe_url, timeout=timeout)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if validator(data):
+                        logger.info("API probe hit: %s/%s", platform, slug)
+                        return SniffResult(
+                            original_url, platform, slug, "high",
+                            f"API probe: {platform} board '{slug}' exists and returns data",
+                        )
+            except Exception:
+                continue
+    return None

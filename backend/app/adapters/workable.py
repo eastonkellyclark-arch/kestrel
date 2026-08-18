@@ -1,7 +1,14 @@
 """Workable public board adapter.
 
-Endpoint: https://apply.workable.com/api/v3/accounts/{slug}/jobs
-Returns {"results": [...]} on success.
+Endpoint: POST https://apply.workable.com/api/v2/accounts/{slug}/jobs
+Body: {} (empty JSON)
+Returns {"total": N, "results": [...]} on success.
+
+NOTE: As of Aug 2026, this endpoint consistently returns 0 results for
+all tested companies. Workable may have locked down their public API.
+The adapter is structurally correct and will work if the API starts
+returning data. If a Workable company is added to the registry and
+returns 0, that's an EMPTY_BOARD, not an error.
 """
 
 import logging
@@ -14,13 +21,13 @@ from ..repository import store_raw_listing
 
 logger = logging.getLogger("kestrel.workable")
 
-BASE_URL = "https://apply.workable.com/api/v3/accounts"
+BASE_URL = "https://apply.workable.com/api/v2/accounts"
 
 
 def fetch(company: str, slug: str, timeout: float = 30.0) -> FetchResult:
     url = f"{BASE_URL}/{slug}/jobs"
     try:
-        resp = httpx.get(url, timeout=timeout)
+        resp = httpx.post(url, json={}, timeout=timeout)
     except httpx.ConnectError as e:
         return FetchResult(company, "workable", slug,
                            FetchOutcome.NETWORK_ERROR, error_detail=f"Connection failed: {e}")
@@ -35,10 +42,6 @@ def fetch(company: str, slug: str, timeout: float = 30.0) -> FetchResult:
         return FetchResult(company, "workable", slug,
                            FetchOutcome.SLUG_NOT_FOUND,
                            error_detail=f"Board '{slug}' not found (404)")
-    if resp.status_code == 403:
-        return FetchResult(company, "workable", slug,
-                           FetchOutcome.BOARD_DISABLED,
-                           error_detail=f"Board '{slug}' returned 403")
     if resp.status_code != 200:
         return FetchResult(company, "workable", slug,
                            FetchOutcome.NETWORK_ERROR,
@@ -53,7 +56,7 @@ def fetch(company: str, slug: str, timeout: float = 30.0) -> FetchResult:
     now = datetime.utcnow()
     stored = 0
     for job in jobs:
-        source_id = str(job.get("id", job.get("shortcode", "")))
+        source_id = str(job.get("shortcode", job.get("id", "")))
         if not source_id:
             continue
         if store_raw_listing("workable", slug, source_id, job, now):
