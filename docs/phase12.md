@@ -16,7 +16,7 @@ Steps:
 
 ## Secrets required
 
-Add these in GitHub repo Settings → Secrets and variables → Actions:
+Add these 5 in GitHub repo Settings → Secrets and variables → Actions:
 
 | Secret name | Value | Source |
 |---|---|---|
@@ -24,8 +24,22 @@ Add these in GitHub repo Settings → Secrets and variables → Actions:
 | `ADZUNA_APP_KEY` | Your Adzuna app key | developer.adzuna.com |
 | `USAJOBS_API_KEY` | Your USAJobs API key | developer.usajobs.gov |
 | `USAJOBS_EMAIL` | Your registered email | developer.usajobs.gov |
-| `CLOUDFLARE_API_KEY` | Your Cloudflare Global API Key | dash.cloudflare.com/profile/api-tokens |
-| `CLOUDFLARE_EMAIL` | Your Cloudflare email | Your account email |
+| `CLOUDFLARE_API_TOKEN` | Scoped API token (see below) | dash.cloudflare.com/profile/api-tokens |
+
+### Cloudflare token — minimum scope
+
+Do NOT use the Global API Key. Create a scoped token:
+
+1. dash.cloudflare.com/profile/api-tokens → Create Token
+2. Use template: **Custom token**
+3. Token name: `Kestrel Pipeline`
+4. Permissions: **Account** — **Cloudflare Workers Scripts** — **Edit**
+5. Account Resources: Include — your account
+6. **Do NOT add any Zone Resources** — deploy needs no DNS/zone access
+7. Continue to summary → Create Token → Copy
+
+This token can only deploy workers. It cannot read or modify DNS,
+domains, billing, or any other account resources.
 
 Gmail credentials are NOT in CI yet — they require interactive OAuth.
 The pipeline skips Gmail when credentials aren't configured.

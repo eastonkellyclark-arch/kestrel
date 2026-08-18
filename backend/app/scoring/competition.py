@@ -19,22 +19,19 @@ Freshness fallback:
   - Unknown: 50
 """
 
-import re
 from datetime import datetime
 
 
 def score(
     posted_at: str,
     now: datetime | None = None,
-    department: str = "",
+    bid_count: int | None = None,
 ) -> tuple[float, dict]:
     if now is None:
         now = datetime.utcnow()
 
-    # Check for real bid count data (Freelancer.com)
-    bid_match = re.match(r"bids:(\d+)", department or "")
-    if bid_match:
-        bid_count = int(bid_match.group(1))
+    # Use real bid count when available (Freelancer.com)
+    if bid_count is not None:
         if bid_count <= 5:
             return 100.0, {"competition": "low", "bids": bid_count}
         if bid_count <= 15:

@@ -704,7 +704,8 @@ def _parse_freelancer(raw: dict, board_slug: str) -> dict | None:
         "description": description,
         "url": url,
         "posted_at": posted_at,
-        "department": f"bids:{bid_count}",  # Store bid count for competition scorer
+        "department": "",
+        "bid_count": bid_count,
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
         "description_quality": classify_description(desc_plain, title),
@@ -844,6 +845,8 @@ def translate_all() -> dict:
             if "gig_classification" not in rec:
                 rec["gig_classification"] = None
                 rec["gig_confidence"] = None
+            if "bid_count" not in rec:
+                rec["bid_count"] = None
             conn.execute(
                 """
                 INSERT INTO listings (
@@ -853,7 +856,7 @@ def translate_all() -> dict:
                     description, url, posted_at, department,
                     is_remote, remote_confidence,
                     description_quality,
-                    gig_classification, gig_confidence,
+                    gig_classification, gig_confidence, bid_count,
                     created_at
                 ) VALUES (
                     :listing_type, :source, :source_id, :board_slug,
@@ -862,7 +865,7 @@ def translate_all() -> dict:
                     :description, :url, :posted_at, :department,
                     :is_remote, :remote_confidence,
                     :description_quality,
-                    :gig_classification, :gig_confidence,
+                    :gig_classification, :gig_confidence, :bid_count,
                     :created_at
                 )
                 """,
@@ -887,7 +890,8 @@ def translate_all() -> dict:
                     remote_confidence = :remote_confidence,
                     description_quality = :description_quality,
                     gig_classification = :gig_classification,
-                    gig_confidence = :gig_confidence
+                    gig_confidence = :gig_confidence,
+                    bid_count = :bid_count
                 WHERE source = :source AND source_id = :source_id
                 """,
                 rec,

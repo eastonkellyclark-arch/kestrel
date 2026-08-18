@@ -152,7 +152,7 @@ def score_gig_listing(row: dict, profile: dict, weights: dict, now: datetime) ->
         row["title_display"], row["description"] or "",
         row["location_display"] or "", profile,
     )
-    co_score, co_detail = competition.score(row["posted_at"], now, row.get("department", ""))
+    co_score, co_detail = competition.score(row["posted_at"], now, row.get("bid_count"))
     sq_score, sq_detail = source_quality.score(row["source"])
 
     hygiene_dims = {
@@ -221,7 +221,7 @@ def score_all() -> dict:
         """
         SELECT id, listing_type, title_display, company_display, location_display,
                description, description_quality, posted_at, source,
-               is_remote
+               is_remote, department, bid_count
         FROM listings
         WHERE canonical_id IS NULL
         """

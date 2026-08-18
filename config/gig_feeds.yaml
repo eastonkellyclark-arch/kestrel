@@ -36,3 +36,13 @@ craigslist:
 # Zero web dev demand. Not worth the complexity.
 hn_freelancer:
   enabled: false
+
+# Freelancer.com — public JSON API, no auth.
+# Real web dev gigs with budgets and bid counts.
+# Add/remove search queries without code changes.
+freelancer:
+  queries:
+    - website development
+    - react developer
+    - wordpress website
+  limit: 50  # max results per query

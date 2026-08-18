@@ -97,15 +97,20 @@ def fetch_all(include_aggregators: bool = True) -> list[FetchResult]:
         # Gig feeds (Google Alerts, Reddit, Craigslist, HN)
         results.extend(gig_feeds.fetch_all_gig_feeds())
 
-        # Freelancer.com — public API, real web dev gigs with budgets
-        freelancer_queries = [
-            "website development",
-            "react developer",
-            "wordpress website",
-        ]
-        for q in freelancer_queries:
+        # Freelancer.com — config-driven queries from gig_feeds.yaml
+        from pathlib import Path
+        import yaml
+        gig_config_path = Path(__file__).resolve().parent.parent.parent / "config" / "gig_feeds.yaml"
+        gig_config = {}
+        if gig_config_path.exists():
+            with open(gig_config_path, encoding="utf-8") as f:
+                gig_config = yaml.safe_load(f) or {}
+        fl_config = gig_config.get("freelancer", {})
+        fl_queries = fl_config.get("queries", [])
+        fl_limit = fl_config.get("limit", 50)
+        for q in fl_queries:
             logger.info("Fetching Freelancer.com: %s...", q)
-            results.append(freelancer_adapter.fetch(query=q, limit=50))
+            results.append(freelancer_adapter.fetch(query=q, limit=fl_limit))
 
     return results
 
