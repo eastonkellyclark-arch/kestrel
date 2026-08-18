@@ -132,10 +132,14 @@ Private surface. Runs locally now, behind Cloudflare Access once deployed.
 - Registry editor
 - **No authentication code.** Cloudflare Access handles identity at the edge.
 
+**Deployment note:** The showroom is a static export on Cloudflare Pages — no
+backend runs there, so `/desk` on the public domain doesn't exist. The desk
+runs locally (`uvicorn`) until there's a hosted backend. Cloudflare Access
+setup moves to whenever the backend is deployed (not Phase 6).
+
 **Done when:** five listings moved through three statuses each, then a full
 re-ingest and rescore, and all history intact. Export opens correctly in a
-spreadsheet. Cloudflare Access configured on `/desk` and verified — logged out
-in a private window returns the Access login, not the page.
+spreadsheet. Desk UI runs locally and is genuinely usable for daily tracking.
 
 **The app is genuinely usable from here. Start using it daily.**
 

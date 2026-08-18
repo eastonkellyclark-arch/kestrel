@@ -5,7 +5,7 @@ Per-company failure isolation: one dead slug never aborts the run.
 
 import logging
 
-from .adapters import greenhouse, lever
+from .adapters import greenhouse, lever, ashby, workable, recruitee
 from .models import ATSPlatform, FetchOutcome, FetchResult
 from .repository import get_active_companies
 
@@ -14,6 +14,9 @@ logger = logging.getLogger("kestrel.collector")
 ADAPTERS = {
     ATSPlatform.GREENHOUSE: greenhouse.fetch,
     ATSPlatform.LEVER: lever.fetch,
+    ATSPlatform.ASHBY: ashby.fetch,
+    ATSPlatform.WORKABLE: workable.fetch,
+    ATSPlatform.RECRUITEE: recruitee.fetch,
 }
 
 OUTCOME_LABELS = {

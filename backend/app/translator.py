@@ -247,9 +247,11 @@ def translate_all() -> dict:
         record["created_at"] = now
         parsed_listings.append(record)
 
-    # Bulk insert
+    # Bulk upsert: insert new, update existing (re-translate mode).
+    # Status, notes, and history live in separate tables so they survive.
     conn = get_connection()
     inserted = 0
+    updated = 0
     for rec in parsed_listings:
         try:
             conn.execute(
@@ -276,14 +278,34 @@ def translate_all() -> dict:
             )
             inserted += 1
         except Exception:
-            # Already translated (UNIQUE constraint)
-            pass
+            # Already exists — update content fields. Preserves status, notes, history.
+            conn.execute(
+                """
+                UPDATE listings SET
+                    title_display = :title_display,
+                    company_display = :company_display,
+                    location_display = :location_display,
+                    title_normalized = :title_normalized,
+                    company_normalized = :company_normalized,
+                    description = :description,
+                    url = :url,
+                    posted_at = :posted_at,
+                    department = :department,
+                    is_remote = :is_remote,
+                    remote_confidence = :remote_confidence,
+                    description_quality = :description_quality
+                WHERE source = :source AND source_id = :source_id
+                """,
+                rec,
+            )
+            updated += 1
     conn.commit()
     conn.close()
 
     stats["translated"] = inserted
+    stats["updated"] = updated
     logger.info(
-        "Translated %d of %d raw listings (%d skipped, %d errors)",
-        inserted, stats["total"], stats["skipped"], stats["errors"],
+        "Translated %d new, updated %d existing of %d raw listings (%d skipped, %d errors)",
+        inserted, updated, stats["total"], stats["skipped"], stats["errors"],
     )
     return stats

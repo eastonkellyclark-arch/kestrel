@@ -45,6 +45,26 @@ class RegistryCreate(BaseModel):
     active: bool = True
 
 
+class SniffRequest(BaseModel):
+    url: str
+
+
+# ── Sniffer ──────────────────────────────────────────────────────────
+
+@router.post("/sniff")
+def sniff_url(body: SniffRequest):
+    """Identify the ATS from a careers page URL."""
+    from .sniffer import sniff
+    result = sniff(body.url)
+    return {
+        "url": result.url,
+        "platform": result.platform,
+        "board_slug": result.board_slug,
+        "confidence": result.confidence,
+        "reason": result.reason,
+    }
+
+
 # ── Status lifecycle ─────────────────────────────────────────────────
 
 @router.patch("/listings/{listing_id}/status")
@@ -258,8 +278,9 @@ def list_registry(active_only: bool = Query(False)):
 @router.post("/registry")
 def add_registry(body: RegistryCreate):
     """Add or update a registry entry."""
-    if body.platform not in ("greenhouse", "lever"):
-        raise HTTPException(422, f"Invalid platform '{body.platform}'. Valid: greenhouse, lever")
+    valid_platforms = {p.value for p in ATSPlatform}
+    if body.platform not in valid_platforms:
+        raise HTTPException(422, f"Invalid platform '{body.platform}'. Valid: {', '.join(sorted(valid_platforms))}")
     entry = RegistryEntry(
         id=None,
         company=body.company,
