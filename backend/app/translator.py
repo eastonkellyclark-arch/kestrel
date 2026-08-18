@@ -626,7 +626,9 @@ def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
         "description": description,
         "url": url,
         "posted_at": posted_at,
-        "department": f"{gig_class}:{gig_confidence:.1f}",
+        "department": "",
+        "gig_classification": gig_class,
+        "gig_confidence": gig_confidence,
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
         "description_quality": desc_quality,
@@ -759,6 +761,10 @@ def translate_all() -> dict:
     updated = 0
     for rec in parsed_listings:
         try:
+            # Default gig fields to NULL for non-gig listings
+            if "gig_classification" not in rec:
+                rec["gig_classification"] = None
+                rec["gig_confidence"] = None
             conn.execute(
                 """
                 INSERT INTO listings (
@@ -768,6 +774,7 @@ def translate_all() -> dict:
                     description, url, posted_at, department,
                     is_remote, remote_confidence,
                     description_quality,
+                    gig_classification, gig_confidence,
                     created_at
                 ) VALUES (
                     :listing_type, :source, :source_id, :board_slug,
@@ -776,6 +783,7 @@ def translate_all() -> dict:
                     :description, :url, :posted_at, :department,
                     :is_remote, :remote_confidence,
                     :description_quality,
+                    :gig_classification, :gig_confidence,
                     :created_at
                 )
                 """,
@@ -798,7 +806,9 @@ def translate_all() -> dict:
                     department = :department,
                     is_remote = :is_remote,
                     remote_confidence = :remote_confidence,
-                    description_quality = :description_quality
+                    description_quality = :description_quality,
+                    gig_classification = :gig_classification,
+                    gig_confidence = :gig_confidence
                 WHERE source = :source AND source_id = :source_id
                 """,
                 rec,

@@ -31,8 +31,8 @@ craigslist:
   - url: https://openrss.org/minneapolis.craigslist.org/search/sbs
     label: craigslist-mpls-small-biz
 
-# HN Freelancer thread — monthly, via Algolia API
+# HN Freelancer thread — disabled.
 # 15-33 comments/month, mostly SEEKING WORK (supply, not demand).
-# Enabled but low-value. Disable if noise exceeds signal.
+# Zero web dev demand. Not worth the complexity.
 hn_freelancer:
-  enabled: true
+  enabled: false

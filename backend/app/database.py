@@ -87,6 +87,10 @@ def init_db() -> None:
             score_breakdown     TEXT,  -- JSON per-dimension breakdown
             degree_hard_required INTEGER NOT NULL DEFAULT 0,
 
+            -- Gig classification (Phase 11)
+            gig_classification  TEXT,  -- demand, supply, ambiguous, or NULL for jobs
+            gig_confidence      REAL,  -- 0.0-1.0 classification confidence
+
             -- Status (Phase 6)
             status              TEXT NOT NULL DEFAULT 'new',
 

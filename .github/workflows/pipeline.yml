@@ -1,0 +1,152 @@
+name: Kestrel Pipeline
+
+on:
+  schedule:
+    # Run every 6 hours. Reddit feeds are staggered within the script.
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Manual trigger
+
+permissions:
+  contents: write  # For committing export data
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Write .env from secrets
+        run: |
+          cat > .env << 'ENVEOF'
+          KESTREL_ADZUNA_APP_ID=${{ secrets.ADZUNA_APP_ID }}
+          KESTREL_ADZUNA_APP_KEY=${{ secrets.ADZUNA_APP_KEY }}
+          KESTREL_USAJOBS_API_KEY=${{ secrets.USAJOBS_API_KEY }}
+          KESTREL_USAJOBS_EMAIL=${{ secrets.USAJOBS_EMAIL }}
+          KESTREL_DATA_DIR=./data
+          ENVEOF
+
+      - name: Fetch all sources
+        id: fetch
+        run: |
+          python -c "
+          import logging, json, sys
+          logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
+          from backend.app.database import init_db
+          from backend.app.seed import seed
+          from backend.app.collector import fetch_all, print_report
+          from backend.app.repository import raw_listing_count
+
+          init_db()
+          seed()
+
+          before = raw_listing_count()
+          results = fetch_all(include_aggregators=True)
+          after = raw_listing_count()
+          print_report(results)
+
+          # Check for failures
+          failures = [r for r in results if r.outcome.value not in ('success', 'empty_board')]
+          # Exclude expected failures (missing Gmail creds, rate limits)
+          real_failures = [r for r in failures
+                          if 'not set' not in (r.error_detail or '').lower()
+                          and 'HTTP 429' not in (r.error_detail or '')]
+          if real_failures:
+              print(f'::warning::Pipeline had {len(real_failures)} failures')
+              for f in real_failures:
+                  print(f'  FAILED: {f.company} ({f.platform}) — {f.error_detail}')
+
+          # Write summary for notification step
+          summary = {
+              'total_fetched': after - before,
+              'sources_ok': sum(1 for r in results if r.outcome.value == 'success'),
+              'sources_failed': len(real_failures),
+              'failures': [{'company': f.company, 'error': f.error_detail} for f in real_failures],
+          }
+          with open('fetch_summary.json', 'w') as f:
+              json.dump(summary, f)
+
+          if len(real_failures) > len(results) // 2:
+              print('::error::More than half of sources failed — pipeline unhealthy')
+              sys.exit(1)
+          "
+
+      - name: Translate + Merge + Score
+        run: |
+          python -c "
+          import logging
+          logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
+          from backend.app.translator import translate_all
+          from backend.app.merger import merge_all
+          from backend.app.scoring.judge import score_all
+          from backend.app.settings import settings
+
+          stats = translate_all()
+          print(f'Translated: {stats[\"translated\"]} new, {stats.get(\"updated\", 0)} updated')
+
+          merge_all(near_miss_file=str(settings.data_dir / 'near_misses.txt'))
+          score_stats = score_all()
+          print(f'Scored: {score_stats[\"scored\"]}, Dealbreakers: {score_stats[\"dealbreakers\"]}')
+          "
+
+      - name: Export static data
+        run: |
+          python -c "
+          from backend.app.database import init_db
+          from backend.app.export import export_public
+          from backend.app.settings import settings
+          init_db()
+          count = export_public(settings.data_dir / 'export')
+          print(f'Exported {count} listings')
+          "
+
+      - name: Build frontend
+        run: |
+          cp -r data/export/* frontend/public/data/ 2>/dev/null || mkdir -p frontend/public/data/listings
+          cp data/export/index.json frontend/public/data/
+          cp data/export/listings/*.json frontend/public/data/listings/
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
+        run: |
+          cd frontend
+          npx wrangler deploy
+
+      - name: Commit data updates
+        run: |
+          git config user.name "Kestrel Pipeline"
+          git config user.email "pipeline@kestrel.adlaunch.studio"
+          git add data/ -f 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No data changes to commit"
+          else
+            git commit -m "Pipeline: $(date -u +%Y-%m-%dT%H:%M) — $(cat fetch_summary.json | python -c 'import sys,json; d=json.load(sys.stdin); print(f\"{d[\"total_fetched\"]} new, {d[\"sources_ok\"]} sources ok\")')"
+            git push
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Kestrel pipeline failed. Check the logs above."
+          echo "Summary:"
+          cat fetch_summary.json 2>/dev/null || echo "No summary available"
+          # Future: add Slack/email notification here
