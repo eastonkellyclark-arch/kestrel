@@ -1,0 +1,17 @@
+[
+  {"company": "Jamf", "platform": "greenhouse", "board_slug": "jamf", "active": true},
+  {"company": "Sezzle", "platform": "greenhouse", "board_slug": "sezzle", "active": true},
+  {"company": "Branch", "platform": "greenhouse", "board_slug": "branch", "active": true},
+  {"company": "Livefront", "platform": "greenhouse", "board_slug": "livefront", "active": true},
+  {"company": "Dispatch", "platform": "greenhouse", "board_slug": "dispatch", "active": true},
+  {"company": "Field Nation", "platform": "lever", "board_slug": "fieldnation", "active": true},
+  {"company": "Total Expert", "platform": "lever", "board_slug": "totalexpert", "active": true},
+  {"company": "Webflow", "platform": "greenhouse", "board_slug": "webflow", "active": true},
+  {"company": "Cockroach Labs", "platform": "greenhouse", "board_slug": "cockroachlabs", "active": true},
+  {"company": "Gusto", "platform": "greenhouse", "board_slug": "gusto", "active": true},
+  {"company": "Airtable", "platform": "greenhouse", "board_slug": "airtable", "active": true},
+  {"company": "Neon", "platform": "lever", "board_slug": "neon", "active": true},
+  {"company": "Perforce", "platform": "lever", "board_slug": "perforce", "active": true},
+  {"company": "Cloudflare", "platform": "greenhouse", "board_slug": "cloudflare", "active": true},
+  {"company": "GitLab", "platform": "greenhouse", "board_slug": "gitlab", "active": true}
+]

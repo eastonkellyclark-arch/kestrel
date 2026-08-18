@@ -286,7 +286,7 @@ def list_registry(active_only: bool = Query(False)):
 
 @router.post("/registry")
 def add_registry(body: RegistryCreate):
-    """Add or update a registry entry."""
+    """Add or update a registry entry. Writes to both SQLite and registry.json."""
     valid_platforms = {p.value for p in ATSPlatform}
     if body.platform not in valid_platforms:
         raise HTTPException(422, f"Invalid platform '{body.platform}'. Valid: {', '.join(sorted(valid_platforms))}")
@@ -298,18 +298,41 @@ def add_registry(body: RegistryCreate):
         active=body.active,
     )
     row_id = upsert_registry(entry)
+    # Persist to registry.json so CI sees the same companies
+    from .seed import load_registry, save_registry
+    reg = load_registry()
+    # Update if exists, add if new
+    found = False
+    for r in reg:
+        if r["platform"] == body.platform and r["board_slug"] == body.board_slug:
+            r["company"] = body.company
+            r["active"] = body.active
+            found = True
+            break
+    if not found:
+        reg.append({"company": body.company, "platform": body.platform,
+                     "board_slug": body.board_slug, "active": body.active})
+    save_registry(reg)
     return {"id": row_id, "company": body.company, "platform": body.platform, "board_slug": body.board_slug}
 
 
 @router.patch("/registry/{entry_id}")
 def update_registry(entry_id: int, active: bool = Query(...)):
-    """Activate or deactivate a registry entry."""
+    """Activate or deactivate a registry entry. Syncs to registry.json."""
     conn = get_connection()
-    row = conn.execute("SELECT id FROM registry WHERE id = ?", (entry_id,)).fetchone()
+    row = conn.execute("SELECT id, platform, board_slug FROM registry WHERE id = ?", (entry_id,)).fetchone()
     if not row:
         conn.close()
         raise HTTPException(404, f"Registry entry {entry_id} not found")
     conn.execute("UPDATE registry SET active = ? WHERE id = ?", (int(active), entry_id))
     conn.commit()
     conn.close()
+    # Sync to registry.json
+    from .seed import load_registry, save_registry
+    reg = load_registry()
+    for r in reg:
+        if r["platform"] == row["platform"] and r["board_slug"] == row["board_slug"]:
+            r["active"] = active
+            break
+    save_registry(reg)
     return {"id": entry_id, "active": active}

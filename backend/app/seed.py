@@ -1,47 +1,47 @@
-"""Seed the company registry with initial companies.
+"""Load the company registry from config/registry.json.
 
-Run: python -m backend.app.seed
+This file is committed — both local dev and CI read the same registry.
+The desk UI writes to it so additions persist across environments.
 """
+
+import json
+from pathlib import Path
 
 from .database import init_db
 from .models import ATSPlatform, RegistryEntry
 from .repository import upsert_registry
 
-# fmt: off
-SEED_COMPANIES = [
-    # ── Twin Cities / Minnesota (7 verified) ─────────────────────────────
-    # The big TC employers (Target, UHG, Best Buy, 3M) use enterprise ATS
-    # (Workday, Taleo) — they arrive via aggregators in Phase 8.
-    RegistryEntry(None, "Jamf",              ATSPlatform.GREENHOUSE, "jamf"),
-    RegistryEntry(None, "Sezzle",            ATSPlatform.GREENHOUSE, "sezzle"),
-    RegistryEntry(None, "Branch",            ATSPlatform.GREENHOUSE, "branch"),
-    RegistryEntry(None, "Livefront",         ATSPlatform.GREENHOUSE, "livefront"),
-    RegistryEntry(None, "Dispatch",          ATSPlatform.GREENHOUSE, "dispatch"),
-    RegistryEntry(None, "Field Nation",      ATSPlatform.LEVER,      "fieldnation"),
-    RegistryEntry(None, "Total Expert",      ATSPlatform.LEVER,      "totalexpert"),
+_REGISTRY_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "registry.json"
 
-    # ── Remote-friendly mid-size — Greenhouse ────────────────────────────
-    RegistryEntry(None, "Webflow",           ATSPlatform.GREENHOUSE, "webflow"),
-    RegistryEntry(None, "Cockroach Labs",    ATSPlatform.GREENHOUSE, "cockroachlabs"),
-    RegistryEntry(None, "Gusto",             ATSPlatform.GREENHOUSE, "gusto"),
-    RegistryEntry(None, "Airtable",          ATSPlatform.GREENHOUSE, "airtable"),
 
-    # ── Remote-friendly mid-size — Lever ─────────────────────────────────
-    RegistryEntry(None, "Neon",              ATSPlatform.LEVER,      "neon"),
-    RegistryEntry(None, "Perforce",          ATSPlatform.LEVER,      "perforce"),
+def load_registry() -> list[dict]:
+    """Read registry.json."""
+    if not _REGISTRY_PATH.exists():
+        return []
+    with open(_REGISTRY_PATH, encoding="utf-8") as f:
+        return json.load(f)
 
-    # ── Mega-cap benchmarks (volume anchors only) ────────────────────────
-    RegistryEntry(None, "Cloudflare",        ATSPlatform.GREENHOUSE, "cloudflare"),
-    RegistryEntry(None, "GitLab",            ATSPlatform.GREENHOUSE, "gitlab"),
-]
-# fmt: on
+
+def save_registry(entries: list[dict]) -> None:
+    """Write registry.json."""
+    with open(_REGISTRY_PATH, "w", encoding="utf-8") as f:
+        json.dump(entries, f, indent=2)
+        f.write("\n")
 
 
 def seed() -> None:
+    """Sync registry.json into the SQLite registry table."""
     init_db()
-    for entry in SEED_COMPANIES:
-        upsert_registry(entry)
-    print(f"Seeded {len(SEED_COMPANIES)} companies into registry.")
+    entries = load_registry()
+    for entry in entries:
+        upsert_registry(RegistryEntry(
+            id=None,
+            company=entry["company"],
+            platform=ATSPlatform(entry["platform"]),
+            board_slug=entry["board_slug"],
+            active=entry.get("active", True),
+        ))
+    print(f"Loaded {len(entries)} companies from registry.json")
 
 
 if __name__ == "__main__":

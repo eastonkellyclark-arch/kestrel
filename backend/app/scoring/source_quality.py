@@ -25,6 +25,7 @@ SOURCE_SCORES = {
     "google_alerts_rss": 40,
     "reddit": 40,
     "craigslist": 40,
+    "freelancer": 80,  # direct client postings with structured budgets
 }
 
 

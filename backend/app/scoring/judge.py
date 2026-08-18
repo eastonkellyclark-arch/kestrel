@@ -152,7 +152,7 @@ def score_gig_listing(row: dict, profile: dict, weights: dict, now: datetime) ->
         row["title_display"], row["description"] or "",
         row["location_display"] or "", profile,
     )
-    co_score, co_detail = competition.score(row["posted_at"], now)
+    co_score, co_detail = competition.score(row["posted_at"], now, row.get("department", ""))
     sq_score, sq_detail = source_quality.score(row["source"])
 
     hygiene_dims = {

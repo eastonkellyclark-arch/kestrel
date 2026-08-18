@@ -11,6 +11,7 @@ from .adapters import usajobs as usajobs_adapter
 from .adapters import remote_feeds
 from .adapters import gmail_alerts
 from .adapters import gig_feeds
+from .adapters import freelancer as freelancer_adapter
 from .models import ATSPlatform, FetchOutcome, FetchResult
 from .repository import get_active_companies
 
@@ -95,6 +96,16 @@ def fetch_all(include_aggregators: bool = True) -> list[FetchResult]:
 
         # Gig feeds (Google Alerts, Reddit, Craigslist, HN)
         results.extend(gig_feeds.fetch_all_gig_feeds())
+
+        # Freelancer.com — public API, real web dev gigs with budgets
+        freelancer_queries = [
+            "website development",
+            "react developer",
+            "wordpress website",
+        ]
+        for q in freelancer_queries:
+            logger.info("Fetching Freelancer.com: %s...", q)
+            results.append(freelancer_adapter.fetch(query=q, limit=50))
 
     return results
 

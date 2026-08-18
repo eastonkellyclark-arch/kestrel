@@ -635,6 +635,84 @@ def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
     }
 
 
+def _parse_freelancer(raw: dict, board_slug: str) -> dict | None:
+    """Parse a Freelancer.com project.
+
+    Has structured budget (min/max/currency) and bid_stats (bid_count).
+    These feed directly into the gig scorer's budget_signal and competition dims.
+    """
+    source_id = str(raw.get("id", ""))
+    if not source_id:
+        return None
+
+    title = raw.get("title", "").strip()
+    if not title:
+        return None
+
+    # No company — individual clients
+    company = "Freelancer.com client"
+
+    # Location from currency/country hint, but Freelancer is global
+    currency = raw.get("currency", {})
+    currency_code = currency.get("code", "") if isinstance(currency, dict) else ""
+    location = f"Remote ({currency_code})" if currency_code else "Remote"
+
+    # Description — Freelancer has preview_description
+    desc = raw.get("preview_description", raw.get("description", ""))
+    description = _sanitize_html(desc) if desc else ""
+    desc_plain = _strip_html(desc) if desc else ""
+
+    url = f"https://www.freelancer.com/projects/{source_id}"
+
+    # Posted time (epoch seconds)
+    time_submitted = raw.get("time_submitted")
+    posted_at = ""
+    if time_submitted:
+        posted_at = datetime.utcfromtimestamp(time_submitted).isoformat()[:19]
+
+    # Budget — structured data, include in description for scorer
+    budget = raw.get("budget", {})
+    budget_min = budget.get("minimum") if isinstance(budget, dict) else None
+    budget_max = budget.get("maximum") if isinstance(budget, dict) else None
+    if budget_min or budget_max:
+        budget_str = f"Budget: ${budget_min or '?'} - ${budget_max or '?'} {currency_code}"
+        description = f"<p><strong>{budget_str}</strong></p>\n{description}"
+        desc_plain = f"{budget_str}\n{desc_plain}"
+
+    # Bid count — real competition data
+    bid_stats = raw.get("bid_stats", {})
+    bid_count = bid_stats.get("bid_count", 0) if isinstance(bid_stats, dict) else 0
+
+    is_remote, remote_conf = detect_remote(
+        location=location, title=title, description=desc_plain,
+    )
+
+    # Classify demand — Freelancer.com projects are all demand by definition
+    gig_class = "demand"
+    gig_conf = 1.0
+
+    return {
+        "source": "freelancer",
+        "source_id": source_id,
+        "board_slug": board_slug,
+        "listing_type": "gig",
+        "title_display": title,
+        "company_display": company,
+        "location_display": location,
+        "title_normalized": normalize_title(title),
+        "company_normalized": normalize_company(company),
+        "description": description,
+        "url": url,
+        "posted_at": posted_at,
+        "department": f"bids:{bid_count}",  # Store bid count for competition scorer
+        "is_remote": int(is_remote),
+        "remote_confidence": remote_conf,
+        "description_quality": classify_description(desc_plain, title),
+        "gig_classification": gig_class,
+        "gig_confidence": gig_conf,
+    }
+
+
 PARSERS = {
     "greenhouse": _parse_greenhouse,
     "lever": _parse_lever,
@@ -650,6 +728,7 @@ PARSERS = {
     "reddit": _parse_gig_feed,
     "craigslist": _parse_gig_feed,
     "hn_freelancer": _parse_gig_feed,
+    "freelancer": _parse_freelancer,
 }
 
 
