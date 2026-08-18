@@ -1,0 +1,36 @@
+# Kestrel — Gig feed configuration
+# Add and remove feeds here without code changes.
+
+# Google Alerts RSS feeds — add your alert URLs here.
+# Create alerts at google.com/alerts, set delivery to RSS.
+# Paste the RSS feed URL below.
+google_alerts: []
+  # Example:
+  # - https://www.google.com/alerts/feeds/XXXX/YYYY
+  # - https://www.google.com/alerts/feeds/XXXX/ZZZZ
+
+# Reddit .rss feeds — hourly polling, ~1 req/min per feed.
+# Do NOT use OAuth API or .json endpoints.
+# Reddit may close RSS at any time — treat as expendable.
+reddit:
+  - url: https://www.reddit.com/r/forhire/new.rss
+    label: r/forhire
+  - url: https://www.reddit.com/r/smallbusiness/new.rss
+    label: r/smallbusiness
+  - url: https://www.reddit.com/r/twincities/new.rss
+    label: r/twincities
+  - url: https://www.reddit.com/r/minneapolis/new.rss
+    label: r/minneapolis
+
+# Craigslist via Open RSS proxy
+craigslist:
+  - url: https://openrss.org/minneapolis.craigslist.org/search/cpg
+    label: craigslist-mpls-computer-gigs
+  - url: https://openrss.org/minneapolis.craigslist.org/search/crg
+    label: craigslist-mpls-creative-gigs
+  - url: https://openrss.org/minneapolis.craigslist.org/search/sbs
+    label: craigslist-mpls-small-biz
+
+# HN Freelancer thread — monthly, via Algolia API
+hn_freelancer:
+  enabled: true

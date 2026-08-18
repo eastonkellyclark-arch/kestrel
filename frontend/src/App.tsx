@@ -15,6 +15,7 @@ type AppState =
 function App() {
   const [state, setState] = useState<AppState>({ kind: 'loading' });
   const [filters, setFilters] = useState<Filters>({
+    listingType: 'all',
     remote: null,
     minScore: 0,
     degreeNotRequired: false,
@@ -51,8 +52,9 @@ function App() {
   const filtered = useMemo(() => {
     if (state.kind !== 'loaded') return [];
     let items = state.data.listings;
-    const { remote, minScore, degreeNotRequired, search } = filters;
+    const { listingType, remote, minScore, degreeNotRequired, search } = filters;
 
+    if (listingType !== 'all') items = items.filter(l => l.listing_type === listingType);
     if (remote === true) items = items.filter(l => l.is_remote);
     else if (remote === false) items = items.filter(l => !l.is_remote);
     if (minScore > 0) items = items.filter(l => (l.score ?? 0) >= minScore);

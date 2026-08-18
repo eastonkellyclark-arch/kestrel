@@ -1,0 +1,24 @@
+# Kestrel — Gig scoring weights
+#
+# The composite score is: hygiene_score * skill_factor
+# Same multiplicative model as job scoring.
+
+# ── Hygiene dimension weights (additive, relative) ──
+# Gig dimensions per CLAUDE.md:
+#   Deliverability (35) — can you actually build it? → skill_match
+#   Budget signal (25)  — is there a real budget?
+#   Freshness (20)      — how fresh?
+#   Locality (10)       — how local?
+#   Competition (10)    — how many people already replied?
+
+budget_signal: 25
+freshness: 20
+locality: 10
+competition: 10
+source_quality: 5
+
+# ── Skill factor curve (multiplicative) ──
+# Deliverability = skill_match, applied as multiplier.
+# More aggressive floor than jobs — a gig you can't deliver is worthless.
+skill_floor: 0.10
+skill_exponent: 0.5

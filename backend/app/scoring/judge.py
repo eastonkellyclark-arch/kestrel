@@ -17,8 +17,11 @@ import yaml
 
 from ..database import get_connection
 from . import (
+    budget_signal,
+    competition,
     degree_posture,
     freshness,
+    locality,
     location_fit,
     seniority_fit,
     skill_match,
@@ -128,16 +131,95 @@ def score_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tup
     return round(composite, 2), breakdown
 
 
+def score_gig_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tuple[float, dict]:
+    """Score a gig listing. Five dimensions: deliverability (skill), budget, freshness, locality, competition."""
+    dealbreakers = profile.get("dealbreakers", [])
+    deal = _check_dealbreakers(
+        row["title_display"], row["description"] or "", dealbreakers
+    )
+    if deal:
+        return 0.0, {"dealbreaker": deal}
+
+    sm_score, sm_detail = skill_match.score(
+        row["title_display"], row["description"] or "",
+        row["description_quality"], profile,
+    )
+    bs_score, bs_detail = budget_signal.score(
+        row["title_display"], row["description"] or "", profile,
+    )
+    fr_score, fr_detail = freshness.score(row["posted_at"], now)
+    lo_score, lo_detail = locality.score(
+        row["title_display"], row["description"] or "",
+        row["location_display"] or "", profile,
+    )
+    co_score, co_detail = competition.score(row["posted_at"], now)
+    sq_score, sq_detail = source_quality.score(row["source"])
+
+    hygiene_dims = {
+        "budget_signal": bs_score,
+        "freshness": fr_score,
+        "locality": lo_score,
+        "competition": co_score,
+        "source_quality": sq_score,
+    }
+
+    hygiene_weights = {k: weights[k] for k in hygiene_dims if k in weights}
+    hygiene_total = sum(hygiene_weights.values()) or 1
+    hygiene_score = sum(
+        hygiene_dims[dim] * hygiene_weights[dim] / hygiene_total
+        for dim in hygiene_dims
+    )
+
+    skill_floor = weights.get("skill_floor", 0.10)
+    skill_exponent = weights.get("skill_exponent", 0.5)
+    if sm_score <= 0:
+        skill_factor = skill_floor
+    else:
+        skill_factor = skill_floor + (1.0 - skill_floor) * (sm_score / 100.0) ** skill_exponent
+
+    composite = hygiene_score * skill_factor
+    scale_pct = round(skill_factor * 100)
+
+    breakdown = {
+        "composite": round(composite, 2),
+        "hygiene_score": round(hygiene_score, 1),
+        "skill_factor": round(skill_factor, 3),
+        "scale_label": f"scaled to {scale_pct}% for {'strong' if scale_pct >= 80 else ('moderate' if scale_pct >= 50 else 'low')} deliverability",
+        "dimensions": {
+            "skill_match": {"score": round(sm_score, 1)},
+            **{dim: {"score": round(hygiene_dims[dim], 1), "weight": weights.get(dim, 0)}
+               for dim in hygiene_dims},
+        },
+        "detail": {
+            "skill_match": sm_detail,
+            "budget_signal": bs_detail,
+            "freshness": fr_detail,
+            "locality": lo_detail,
+            "competition": co_detail,
+            "source_quality": sq_detail,
+        },
+    }
+
+    return round(composite, 2), breakdown
+
+
 def score_all() -> dict:
-    """Score every canonical listing. Returns stats."""
-    profile = _load_yaml("profile.yaml")
-    weights = _load_yaml("weights.yaml")
+    """Score every canonical listing using the right profile per listing_type."""
+    configs = {
+        "job": (_load_yaml("profile.yaml"), _load_yaml("weights.yaml")),
+    }
+    # Load gig config if it exists
+    try:
+        configs["gig"] = (_load_yaml("gig_profile.yaml"), _load_yaml("gig_weights.yaml"))
+    except FileNotFoundError:
+        pass
+
     now = datetime.utcnow()
 
     conn = get_connection()
     rows = conn.execute(
         """
-        SELECT id, title_display, company_display, location_display,
+        SELECT id, listing_type, title_display, company_display, location_display,
                description, description_quality, posted_at, source,
                is_remote
         FROM listings
@@ -150,7 +232,10 @@ def score_all() -> dict:
 
     conn = get_connection()
     for row in rows:
-        composite, breakdown = score_listing(dict(row), profile, weights, now)
+        lt = row["listing_type"]
+        profile, weights = configs.get(lt, configs["job"])
+        scorer = score_gig_listing if lt == "gig" else score_listing
+        composite, breakdown = scorer(dict(row), profile, weights, now)
         # Derive degree_hard_required from the breakdown
         dp_detail = breakdown.get("detail", {}).get("degree_posture", {})
         degree_hard = 1 if dp_detail.get("posture") == "hard_requirement" else 0

@@ -565,6 +565,60 @@ def _parse_gmail_alert(raw: dict, board_slug: str) -> dict | None:
     }
 
 
+def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
+    """Parse a gig feed item (Google Alerts, Reddit, Craigslist, HN).
+
+    These are noisy — the scorer filters. We store everything.
+    listing_type is set to 'gig' so the right scorer and profile are used.
+    """
+    source_id = str(raw.get("source_id", raw.get("id", "")))
+    if not source_id:
+        return None
+
+    title = raw.get("title", "").strip()
+    if not title:
+        return None
+
+    company = raw.get("author", raw.get("company", "")).strip() or "Unknown"
+    location = ""  # Gig feeds rarely have structured locations
+
+    raw_desc = raw.get("description", "")
+    import html as html_mod
+    if raw_desc:
+        raw_desc = html_mod.unescape(raw_desc)
+    description = _sanitize_html(raw_desc) if raw_desc else ""
+    desc_plain = _strip_html(raw_desc) if raw_desc else ""
+
+    url = raw.get("link", raw.get("url", ""))
+
+    posted_at = raw.get("pub_date", raw.get("created_at", ""))
+    if posted_at:
+        posted_at = posted_at[:19]
+
+    is_remote, remote_conf = detect_remote(
+        location=location, title=title, description=desc_plain,
+    )
+
+    return {
+        "source": board_slug.split("-")[0] if "-" in board_slug else board_slug,
+        "source_id": source_id,
+        "board_slug": board_slug,
+        "listing_type": "gig",
+        "title_display": title,
+        "company_display": company,
+        "location_display": location,
+        "title_normalized": normalize_title(title),
+        "company_normalized": normalize_company(company),
+        "description": description,
+        "url": url,
+        "posted_at": posted_at,
+        "department": "",
+        "is_remote": int(is_remote),
+        "remote_confidence": remote_conf,
+        "description_quality": classify_description(desc_plain, title),
+    }
+
+
 PARSERS = {
     "greenhouse": _parse_greenhouse,
     "lever": _parse_lever,
@@ -576,6 +630,10 @@ PARSERS = {
     "remotive": _parse_remote_feed,
     "weworkremotely": _parse_remote_feed,
     "gmail_alert": _parse_gmail_alert,
+    "google_alerts_rss": _parse_gig_feed,
+    "reddit": _parse_gig_feed,
+    "craigslist": _parse_gig_feed,
+    "hn_freelancer": _parse_gig_feed,
 }
 
 

@@ -50,6 +50,7 @@ export interface IndexData {
 }
 
 export interface Filters {
+  listingType: 'all' | 'job' | 'gig';
   remote: boolean | null;
   minScore: number;
   degreeNotRequired: boolean;

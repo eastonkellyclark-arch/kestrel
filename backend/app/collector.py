@@ -10,6 +10,7 @@ from .adapters import adzuna as adzuna_adapter
 from .adapters import usajobs as usajobs_adapter
 from .adapters import remote_feeds
 from .adapters import gmail_alerts
+from .adapters import gig_feeds
 from .models import ATSPlatform, FetchOutcome, FetchResult
 from .repository import get_active_companies
 
@@ -91,6 +92,9 @@ def fetch_all(include_aggregators: bool = True) -> list[FetchResult]:
             token_path = token or str(settings.data_dir / "gmail_token.json")
             logger.info("Fetching Gmail alerts...")
             results.extend(gmail_alerts.fetch_alerts(creds, token_path))
+
+        # Gig feeds (Google Alerts, Reddit, Craigslist, HN)
+        results.extend(gig_feeds.fetch_all_gig_feeds())
 
     return results
 

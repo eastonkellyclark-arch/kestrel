@@ -188,6 +188,31 @@ body {
   accent-color: var(--accent);
 }
 
+.toggle-group {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.toggle-btn {
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+}
+
+.toggle-btn:last-child { border-right: none; }
+
+.toggle-btn.active {
+  background: var(--accent);
+  color: #0c0e14;
+  font-weight: 600;
+}
+
 .filter-count {
   font-size: 0.75rem;
   color: var(--text-dim);

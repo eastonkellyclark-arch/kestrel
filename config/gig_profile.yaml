@@ -1,0 +1,99 @@
+# Kestrel — Gig scoring profile
+# Edit this file and run rescore to reorder. Zero network calls.
+
+skills:
+  # What you can deliver
+  primary:
+    - website
+    - web design
+    - web development
+    - wordpress
+    - shopify
+    - react
+    - next.js
+    - landing page
+    - ecommerce
+    - e-commerce
+  secondary:
+    - seo
+    - email marketing
+    - advertising
+    - google ads
+    - facebook ads
+    - social media
+    - branding
+    - logo
+    - graphic design
+    - analytics
+    - crm
+    - hubspot
+  bonus:
+    - automation
+    - zapier
+    - business systems
+    - database
+    - app development
+    - mobile app
+    - api integration
+  synonyms:
+    website: [web site, site build, site redesign]
+    web design: [web designer, website design]
+    web development: [web developer, web dev]
+    wordpress: [wp, wordpress site]
+    react: [reactjs, react.js]
+    next.js: [nextjs]
+    ecommerce: [e-commerce, online store, online shop]
+    landing page: [landing pages, lander]
+    seo: [search engine optimization]
+    email marketing: [email campaign, newsletter, mailchimp]
+    google ads: [adwords, ppc, pay per click]
+    facebook ads: [meta ads, instagram ads]
+    social media: [social media marketing, smm]
+    logo: [logo design, brand identity]
+    graphic design: [graphics, visual design]
+    crm: [customer relationship management]
+    automation: [automate, workflow automation]
+    api integration: [api, integration]
+
+# Budget indicators — phrases suggesting a real budget exists
+budget_signals:
+  positive:
+    - budget
+    - rate
+    - pay
+    - compensation
+    - salary
+    - per hour
+    - per project
+    - fixed price
+    - "$"
+    - retainer
+  negative:
+    - unpaid
+    - volunteer
+    - free
+    - no budget
+    - exposure
+    - equity only
+    - revenue share only
+
+# Locality signals — Twin Cities / Minnesota
+locality_terms:
+  - minneapolis
+  - st. paul
+  - saint paul
+  - twin cities
+  - minnesota
+  - mn
+  - farmington
+  - eagan
+  - burnsville
+  - lakeville
+  - apple valley
+  - eden prairie
+
+dealbreakers:
+  - must be on-site in
+  - relocation required
+  - full-time only
+  - w2 only

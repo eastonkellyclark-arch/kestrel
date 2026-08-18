@@ -20,6 +20,18 @@ export function FilterPanel({ filters, onChange, total, showing }: Props) {
         />
       </div>
       <div className="filter-row">
+        <div className="toggle-group">
+          {(['all', 'job', 'gig'] as const).map(t => (
+            <button
+              key={t}
+              type="button"
+              className={`toggle-btn ${filters.listingType === t ? 'active' : ''}`}
+              onClick={() => onChange({ ...filters, listingType: t })}
+            >
+              {t === 'all' ? 'All' : t === 'job' ? 'Jobs' : 'Gigs'}
+            </button>
+          ))}
+        </div>
         <label className="filter-chip">
           <input
             type="checkbox"
