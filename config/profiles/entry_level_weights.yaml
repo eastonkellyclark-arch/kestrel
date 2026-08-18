@@ -1,0 +1,13 @@
+# Kestrel — Entry-level profile weights
+# Experience fit weighted heavily — 0-1 year roles rank highest.
+
+degree_posture: 15
+freshness: 12
+location_fit: 15
+seniority_fit: 10
+experience_fit: 18
+source_quality: 5
+
+# Skill multiplier — same curve, keeps non-tech out
+skill_floor: 0.15
+skill_exponent: 0.6

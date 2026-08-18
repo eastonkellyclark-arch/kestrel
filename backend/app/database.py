@@ -91,6 +91,7 @@ def init_db() -> None:
             gig_classification  TEXT,  -- demand, supply, ambiguous, or NULL for jobs
             gig_confidence      REAL,  -- 0.0-1.0 classification confidence
             bid_count           INTEGER,  -- real bid/reply count (Freelancer.com etc.)
+            experience_required INTEGER,  -- years extracted from description, NULL if not found
 
             -- Status (Phase 6)
             status              TEXT NOT NULL DEFAULT 'new',

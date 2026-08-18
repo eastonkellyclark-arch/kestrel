@@ -220,7 +220,10 @@ priority and the first thing to cut.
 
 ## Scoring
 
-Two profiles, one engine. Weights and profiles live in YAML — data, not code.
+Multiple named profiles, one engine. Profiles live in `config/profiles/` as YAML.
+Active profile set in `profiles.yaml`. Each profile has its own skills, experience
+level, seniority target, and weights. The skill multiplier is never loosened —
+separate profiles with separate skills are the answer for non-software roles.
 
 ### Job track
 

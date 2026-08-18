@@ -48,6 +48,14 @@ export function FilterPanel({ filters, onChange, total, showing }: Props) {
           />
           No degree required
         </label>
+        <label className="filter-chip">
+          <input
+            type="checkbox"
+            checked={filters.entryLevel}
+            onChange={e => onChange({ ...filters, entryLevel: e.target.checked })}
+          />
+          Entry level (0-1 yr)
+        </label>
         <label className="filter-range">
           Min score: {filters.minScore}
           <input

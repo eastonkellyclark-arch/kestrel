@@ -1,0 +1,15 @@
+# Kestrel — Full-stack profile weights
+#
+# The composite score is: hygiene_score * skill_factor
+
+# ── Hygiene dimension weights (additive, relative) ──
+degree_posture: 15
+freshness: 15
+location_fit: 15
+seniority_fit: 8
+experience_fit: 12
+source_quality: 5
+
+# ── Skill factor curve (multiplicative) ──
+skill_floor: 0.15
+skill_exponent: 0.6

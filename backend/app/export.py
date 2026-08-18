@@ -29,7 +29,8 @@ def export_public(output_dir: Path) -> int:
                department, url, posted_at,
                is_remote, remote_confidence, description_quality,
                description,
-               score, score_breakdown, degree_hard_required
+               score, score_breakdown, degree_hard_required,
+               experience_required
         FROM listings
         WHERE canonical_id IS NULL AND score IS NOT NULL
         ORDER BY score DESC
@@ -66,6 +67,7 @@ def export_public(output_dir: Path) -> int:
             "hygiene_score": breakdown.get("hygiene_score"),
             "skill_factor": breakdown.get("skill_factor"),
             "scale_label": breakdown.get("scale_label"),
+            "experience_required": record["experience_required"],
         })
 
         # Per-listing detail file: full description + breakdown

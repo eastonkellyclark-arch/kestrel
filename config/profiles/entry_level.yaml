@@ -1,0 +1,55 @@
+# Kestrel — Entry-level profile
+# Targets internships, apprenticeships, junior roles, no-experience-required.
+
+skills:
+  primary:
+    - typescript
+    - react
+    - nextjs
+    - nodejs
+    - postgresql
+  secondary:
+    - python
+    - docker
+    - ci/cd
+    - rest api
+    - cloud
+    - aws
+  bonus:
+    - supabase
+    - vite
+    - redis
+  synonyms:
+    typescript: [ts]
+    react: [reactjs, react.js]
+    nextjs: [next.js, next js]
+    nodejs: [node.js, node js, node]
+    postgresql: [postgres, pg, psql]
+    python: [py]
+    docker: [containerization, containers]
+    ci/cd: [ci cd, cicd, continuous integration]
+
+experience_years: 0
+
+seniority:
+  target: entry-junior
+  # Entry-level and junior are the TARGET — score highest, not penalized.
+  too_senior:
+    - staff
+    - principal
+    - distinguished
+    - director
+    - vp
+    - vice president
+    - head of
+    - chief
+    - senior
+    - lead
+  too_junior: []  # Nothing is too junior for this profile
+
+dealbreakers:
+  - security clearance
+  - top secret
+  - ts/sci
+  - commission only
+  - commission-only

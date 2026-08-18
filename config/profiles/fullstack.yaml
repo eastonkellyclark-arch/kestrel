@@ -1,0 +1,91 @@
+# Kestrel — Job scoring profile
+# Edit this file and run rescore to reorder everything. Zero network calls.
+
+skills:
+  primary:
+    - typescript
+    - react
+    - nextjs
+    - next.js
+    - nodejs
+    - node.js
+    - postgresql
+    - postgres
+  secondary:
+    - python
+    - redis
+    - electron
+    - rest api
+    - rest apis
+    - api design
+    - cloud
+    - aws
+    - gcp
+    - azure
+    - docker
+    - ci/cd
+  bonus:
+    - c++
+    - cpp
+    - supabase
+    - vite
+    - job queue
+    - message queue
+    - rabbitmq
+    - bull
+    - marketing automation
+    - hubspot
+    - marketo
+  # Synonyms: canonical skill → list of alternative patterns.
+  # Add a synonym here instead of editing code.
+  synonyms:
+    typescript: [ts]
+    react: [reactjs, react.js]
+    nextjs: [next.js, next js]
+    next.js: [nextjs, next js]
+    nodejs: [node.js, node js, node]
+    node.js: [nodejs, node js, node]
+    postgresql: [postgres, pg, psql]
+    postgres: [postgresql, pg, psql]
+    python: [py]
+    docker: [containerization, containers]
+    ci/cd: [ci cd, cicd, continuous integration, continuous deployment]
+    c++: [cpp, cplusplus]
+    cpp: [c++, cplusplus]
+    rest api: [rest apis, restful, restful api]
+    rest apis: [rest api, restful, restful api]
+    api design: [api development]
+    javascript: [js]
+
+# Experience: ~1 year freelance
+experience_years: 1
+
+seniority:
+  target: mid-senior
+  # Mid and Senior are accepted range — no penalty.
+  # Staff/Principal/Director are too senior. Intern/Junior too junior.
+  too_senior:
+    - staff
+    - principal
+    - distinguished
+    - director
+    - vp
+    - vice president
+    - head of
+    - chief
+  too_junior:
+    - intern
+    - internship
+    - co-op
+    - new grad
+    - junior
+    - entry level
+    - entry-level
+
+dealbreakers:
+  - security clearance
+  - top secret
+  - ts/sci
+  - commission only
+  - commission-only
+  - 1099 only

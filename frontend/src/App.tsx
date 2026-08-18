@@ -39,6 +39,7 @@ function App() {
     remote: null,
     minScore: 0,
     degreeNotRequired: false,
+    entryLevel: false,
     search: '',
   });
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -72,11 +73,14 @@ function App() {
   const filtered = useMemo(() => {
     if (state.kind !== 'loaded') return [];
     let items = state.data.listings;
-    const { listingType, remote, minScore, degreeNotRequired, search } = filters;
+    const { listingType, remote, minScore, degreeNotRequired, entryLevel, search } = filters;
 
     if (listingType !== 'all') items = items.filter(l => l.listing_type === listingType);
     if (remote === true) items = items.filter(l => l.is_remote);
     else if (remote === false) items = items.filter(l => !l.is_remote);
+    if (entryLevel) items = items.filter(l =>
+      l.experience_required !== null && l.experience_required !== undefined && l.experience_required <= 1
+    );
     if (minScore > 0) items = items.filter(l => (l.score ?? 0) >= minScore);
     if (degreeNotRequired) items = items.filter(l => !l.degree_hard_required);
     if (search) {

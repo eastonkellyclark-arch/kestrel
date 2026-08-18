@@ -38,6 +38,11 @@ export function ListingCard({ listing, onClick }: Props) {
           <span className="card-location">{listing.location || 'Location not specified'}</span>
           {listing.is_remote && <span className="tag remote">Remote</span>}
           {!listing.degree_hard_required && <span className="tag degree">No degree req.</span>}
+          {listing.experience_required !== null && listing.experience_required !== undefined && (
+            <span className={`tag ${listing.experience_required <= 1 ? 'entry' : 'exp'}`}>
+              {listing.experience_required === 0 ? 'No exp. req.' : `${listing.experience_required}+ yrs`}
+            </span>
+          )}
           {listing.posted_at && (
             <span className="card-date">{daysAgo(listing.posted_at)}</span>
           )}

@@ -841,12 +841,15 @@ def translate_all() -> dict:
     updated = 0
     for rec in parsed_listings:
         try:
-            # Default gig fields to NULL for non-gig listings
+            # Default optional fields to NULL
             if "gig_classification" not in rec:
                 rec["gig_classification"] = None
                 rec["gig_confidence"] = None
             if "bid_count" not in rec:
                 rec["bid_count"] = None
+            # Extract experience requirement from description
+            from .scoring.experience_fit import extract_years
+            rec["experience_required"] = extract_years(rec.get("description", "") or "")
             conn.execute(
                 """
                 INSERT INTO listings (
@@ -857,6 +860,7 @@ def translate_all() -> dict:
                     is_remote, remote_confidence,
                     description_quality,
                     gig_classification, gig_confidence, bid_count,
+                    experience_required,
                     created_at
                 ) VALUES (
                     :listing_type, :source, :source_id, :board_slug,
@@ -866,6 +870,7 @@ def translate_all() -> dict:
                     :is_remote, :remote_confidence,
                     :description_quality,
                     :gig_classification, :gig_confidence, :bid_count,
+                    :experience_required,
                     :created_at
                 )
                 """,
@@ -891,7 +896,8 @@ def translate_all() -> dict:
                     description_quality = :description_quality,
                     gig_classification = :gig_classification,
                     gig_confidence = :gig_confidence,
-                    bid_count = :bid_count
+                    bid_count = :bid_count,
+                    experience_required = :experience_required
                 WHERE source = :source AND source_id = :source_id
                 """,
                 rec,

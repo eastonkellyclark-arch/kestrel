@@ -14,6 +14,7 @@ export interface ListingSummary {
   hygiene_score: number | null;
   skill_factor: number | null;
   scale_label: string | null;
+  experience_required: number | null;
 }
 
 export interface BreakdownDetail {
@@ -54,5 +55,6 @@ export interface Filters {
   remote: boolean | null;
   minScore: number;
   degreeNotRequired: boolean;
+  entryLevel: boolean;
   search: string;
 }

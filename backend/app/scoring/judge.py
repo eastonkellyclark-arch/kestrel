@@ -20,6 +20,7 @@ from . import (
     budget_signal,
     competition,
     degree_posture,
+    experience_fit,
     freshness,
     locality,
     location_fit,
@@ -31,12 +32,37 @@ from . import (
 logger = logging.getLogger("kestrel.judge")
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent.parent / "config"
+_PROFILES_DIR = _CONFIG_DIR / "profiles"
 
 
 def _load_yaml(filename: str) -> dict:
     path = _CONFIG_DIR / filename
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def _load_profile_yaml(filename: str) -> dict:
+    path = _PROFILES_DIR / filename
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def load_active_profile() -> tuple[str, dict, dict]:
+    """Load the active named profile. Returns (name, profile, weights)."""
+    index_path = _PROFILES_DIR / "profiles.yaml"
+    if not index_path.exists():
+        # Fallback to legacy single-file profiles
+        return "default", _load_yaml("profile.yaml"), _load_yaml("weights.yaml")
+    index = _load_profile_yaml("profiles.yaml")
+    active_name = index.get("active", "fullstack")
+    profile_info = index.get("profiles", {}).get(active_name)
+    if not profile_info:
+        logger.warning("Profile '%s' not found, falling back to fullstack", active_name)
+        active_name = "fullstack"
+        profile_info = index["profiles"]["fullstack"]
+    profile = _load_profile_yaml(profile_info["profile"])
+    weights = _load_profile_yaml(profile_info["weights"])
+    return active_name, profile, weights
 
 
 def _check_dealbreakers(title: str, description: str, dealbreakers: list[str]) -> str | None:
@@ -74,12 +100,14 @@ def score_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tup
     )
     sf_score, sf_detail = seniority_fit.score(row["title_display"], profile)
     sq_score, sq_detail = source_quality.score(row["source"])
+    ef_score, ef_detail = experience_fit.score(row.get("experience_required"), profile)
 
     hygiene_dims = {
         "degree_posture": dp_score,
         "freshness": fr_score,
         "location_fit": lf_score,
         "seniority_fit": sf_score,
+        "experience_fit": ef_score,
         "source_quality": sq_score,
     }
 
@@ -124,6 +152,7 @@ def score_listing(row: dict, profile: dict, weights: dict, now: datetime) -> tup
             "freshness": fr_detail,
             "location_fit": lf_detail,
             "seniority_fit": sf_detail,
+            "experience_fit": ef_detail,
             "source_quality": sq_detail,
         },
     }
@@ -203,16 +232,29 @@ def score_gig_listing(row: dict, profile: dict, weights: dict, now: datetime) ->
     return round(composite, 2), breakdown
 
 
-def score_all() -> dict:
-    """Score every canonical listing using the right profile per listing_type."""
-    configs = {
-        "job": (_load_yaml("profile.yaml"), _load_yaml("weights.yaml")),
-    }
+def score_all(profile_name: str | None = None) -> dict:
+    """Score every canonical listing using the active (or specified) profile."""
+    if profile_name:
+        # Load specific profile
+        index = _load_profile_yaml("profiles.yaml")
+        info = index.get("profiles", {}).get(profile_name)
+        if not info:
+            raise ValueError(f"Profile '{profile_name}' not found")
+        job_profile = _load_profile_yaml(info["profile"])
+        job_weights = _load_profile_yaml(info["weights"])
+        active = profile_name
+    else:
+        active, job_profile, job_weights = load_active_profile()
+
+    configs = {"job": (job_profile, job_weights)}
+
     # Load gig config if it exists
     try:
         configs["gig"] = (_load_yaml("gig_profile.yaml"), _load_yaml("gig_weights.yaml"))
     except FileNotFoundError:
         pass
+
+    logger.info("Scoring with profile: %s", active)
 
     now = datetime.utcnow()
 
@@ -221,7 +263,7 @@ def score_all() -> dict:
         """
         SELECT id, listing_type, title_display, company_display, location_display,
                description, description_quality, posted_at, source,
-               is_remote, department, bid_count
+               is_remote, department, bid_count, experience_required
         FROM listings
         WHERE canonical_id IS NULL
         """

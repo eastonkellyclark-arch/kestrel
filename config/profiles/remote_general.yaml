@@ -1,0 +1,55 @@
+# Kestrel — General remote profile
+# For non-software remote work. Lower skill weight, higher location/freshness.
+# The skill multiplier is NOT loosened — it still filters non-matching roles.
+# This profile just has broader skills and weights location more.
+
+skills:
+  primary:
+    - marketing
+    - project management
+    - operations
+    - customer success
+    - account management
+    - sales
+  secondary:
+    - analytics
+    - data analysis
+    - excel
+    - communication
+    - writing
+    - content
+    - social media
+  bonus:
+    - hubspot
+    - salesforce
+    - jira
+    - asana
+    - slack
+  synonyms:
+    marketing: [digital marketing, marketing manager]
+    project management: [program management, pm]
+    analytics: [data analytics, business analytics]
+    data analysis: [data analyst]
+    salesforce: [sfdc]
+
+experience_years: 1
+
+seniority:
+  target: mid-senior
+  too_senior:
+    - staff
+    - principal
+    - distinguished
+    - director
+    - vp
+    - vice president
+    - head of
+    - chief
+  too_junior:
+    - intern
+    - internship
+
+dealbreakers:
+  - security clearance
+  - top secret
+  - commission only

@@ -1,0 +1,14 @@
+# Kestrel — General remote profile weights
+# Location and freshness weighted higher than skills.
+# Skill multiplier still active — just with broader skill definitions.
+
+degree_posture: 10
+freshness: 20
+location_fit: 25
+seniority_fit: 8
+experience_fit: 7
+source_quality: 5
+
+# Same multiplier curve — does NOT loosen for non-software
+skill_floor: 0.15
+skill_exponent: 0.6
