@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    model_config = {"env_prefix": "KESTREL_"}
+    model_config = {"env_prefix": "KESTREL_", "env_file": ".env"}
 
     # Server
     host: str = "127.0.0.1"
