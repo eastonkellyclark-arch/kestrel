@@ -45,9 +45,17 @@ export interface ListingDetail extends ListingSummary {
   };
 }
 
+export interface ProfileMeta {
+  name: string;
+  label: string;
+  active: boolean;
+}
+
 export interface IndexData {
   exported_at: string;
   count: number;
+  active_profile?: string;
+  profiles?: ProfileMeta[];
   listings: ListingSummary[];
 }
 

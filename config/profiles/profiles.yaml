@@ -1,19 +1,14 @@
-# Kestrel — Named profiles index
-# Each profile has a name, profile YAML, and weights YAML.
-# The active profile is used for scoring. Change it and rescore.
-
 active: fullstack
-
 profiles:
   fullstack:
-    label: "Full-Stack Developer"
+    label: Full-Stack Developer
     profile: fullstack.yaml
     weights: fullstack_weights.yaml
   entry_level:
-    label: "Entry Level"
+    label: Entry Level
     profile: entry_level.yaml
     weights: entry_level_weights.yaml
   remote_general:
-    label: "Remote (General)"
+    label: Remote (General)
     profile: remote_general.yaml
     weights: remote_general_weights.yaml

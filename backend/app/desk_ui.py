@@ -80,10 +80,16 @@ textarea{width:100%;resize:vertical;min-height:60px}
 
 <div id="pipeline" class="pipeline"></div>
 
+<div id="profile-bar" class="form-row" style="margin-bottom:1rem">
+  <span style="color:var(--text-dim);font-size:0.8rem">Profile:</span>
+  <select id="profile-select" onchange="switchProfile(this.value)" style="font-size:0.8rem"></select>
+</div>
+
 <div class="tabs">
   <div class="tab active" onclick="showTab('tracker')">Tracker</div>
   <div class="tab" onclick="showTab('registry')">Registry</div>
   <div class="tab" onclick="showTab('sniffer')">Sniffer</div>
+  <div class="tab" onclick="showTab('resumes')">Resumes</div>
 </div>
 
 <!-- Tracker Tab -->
@@ -107,6 +113,35 @@ textarea{width:100%;resize:vertical;min-height:60px}
 <table>
 <thead><tr><th>Company</th><th>Platform</th><th>Slug</th><th>Active</th><th></th></tr></thead>
 <tbody id="registry-rows"></tbody>
+</table>
+</div>
+
+<!-- Resumes Tab -->
+<div id="tab-resumes" style="display:none">
+<h2>Resumes</h2>
+<div class="panel">
+  <div class="form-row">
+    <input type="file" id="resume-file" style="font-size:0.8rem">
+    <input type="text" id="resume-label" placeholder="Label (e.g. Fullstack v2)">
+    <select id="resume-profile"></select>
+    <button onclick="uploadResume()">Upload</button>
+  </div>
+</div>
+<table>
+<thead><tr><th>Label</th><th>File</th><th>Profile</th><th>Uploaded</th><th></th></tr></thead>
+<tbody id="resume-rows"></tbody>
+</table>
+
+<h2 style="margin-top:1.5rem">Portfolio Links</h2>
+<div class="form-row">
+  <input type="text" id="port-label" placeholder="Label">
+  <input type="text" id="port-url" placeholder="https://...">
+  <select id="port-profile"></select>
+  <button onclick="addPortfolio()">Add</button>
+</div>
+<table>
+<thead><tr><th>Label</th><th>URL</th><th>Profile</th><th></th></tr></thead>
+<tbody id="portfolio-rows"></tbody>
 </table>
 </div>
 
@@ -142,6 +177,7 @@ function showTab(name) {
   document.getElementById('tab-' + name).style.display = 'block';
   event.target.classList.add('active');
   if (name === 'registry') loadRegistry();
+  if (name === 'resumes') { loadResumes(); loadPortfolioLinks(); }
 }
 
 // Pipeline
@@ -184,9 +220,20 @@ async function loadListings() {
 }
 
 async function changeStatus(id, status) {
+  let resume_id = null;
+  if (status === 'applied') {
+    // Prompt for resume selection
+    const r = await fetch(API + '/desk/resumes');
+    const d = await r.json();
+    if (d.resumes.length > 0) {
+      const opts = d.resumes.map(r => `${r.id}: ${r.label} (${r.profile_name})`).join('\\n');
+      const pick = prompt('Which resume did you use? Enter ID or leave blank:\\n' + opts);
+      if (pick && !isNaN(parseInt(pick))) resume_id = parseInt(pick);
+    }
+  }
   await fetch(API + `/desk/listings/${id}/status`, {
     method: 'PATCH', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({status})
+    body: JSON.stringify({status, resume_id})
   });
   flash('Status updated');
   loadPipeline(); loadListings();
@@ -283,8 +330,105 @@ async function confirmSniff() {
   lastSniff = null;
 }
 
+// Profiles
+let allProfiles = [];
+async function loadProfiles() {
+  const r = await fetch(API + '/desk/profiles');
+  const d = await r.json();
+  allProfiles = d.profiles;
+  const sel = document.getElementById('profile-select');
+  sel.innerHTML = d.profiles.map(p =>
+    `<option value="${p.name}"${p.active ? ' selected' : ''}>${p.label}</option>`
+  ).join('');
+  // Also populate resume/portfolio profile selectors
+  for (const id of ['resume-profile', 'port-profile']) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = d.profiles.map(p =>
+      `<option value="${p.name}"${p.active ? ' selected' : ''}>${p.label}</option>`
+    ).join('');
+  }
+}
+
+async function switchProfile(name) {
+  flash('Rescoring...');
+  const r = await fetch(API + '/desk/profiles/switch', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name})
+  });
+  const d = await r.json();
+  flash(`Profile: ${name} (${d.scored} scored)`);
+  loadPipeline(); loadListings();
+}
+
+// Resumes
+async function loadResumes() {
+  const r = await fetch(API + '/desk/resumes');
+  const d = await r.json();
+  document.getElementById('resume-rows').innerHTML = d.resumes.map(res =>
+    `<tr>
+      <td>${res.label}</td>
+      <td><a href="${API}/desk/resumes/${res.id}/download" target="_blank">${res.filename}</a></td>
+      <td>${res.profile_name}</td>
+      <td style="font-size:0.72rem;color:var(--text-dim)">${(res.created_at||'').slice(0,10)}</td>
+      <td><button class="secondary" onclick="deleteResume(${res.id})" style="font-size:0.72rem">Delete</button></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="5" style="color:var(--text-dim);text-align:center">No resumes uploaded</td></tr>';
+}
+
+async function uploadResume() {
+  const file = document.getElementById('resume-file').files[0];
+  const label = document.getElementById('resume-label').value.trim();
+  const profile = document.getElementById('resume-profile').value;
+  if (!file || !label) { flash('Need file and label'); return; }
+  const form = new FormData();
+  form.append('file', file);
+  form.append('label', label);
+  form.append('profile_name', profile);
+  await fetch(API + '/desk/resumes', { method: 'POST', body: form });
+  document.getElementById('resume-label').value = '';
+  flash('Resume uploaded'); loadResumes();
+}
+
+async function deleteResume(id) {
+  await fetch(API + `/desk/resumes/${id}`, { method: 'DELETE' });
+  flash('Deleted'); loadResumes();
+}
+
+// Portfolio links
+async function loadPortfolioLinks() {
+  const r = await fetch(API + '/desk/portfolio-links');
+  const d = await r.json();
+  document.getElementById('portfolio-rows').innerHTML = d.links.map(l =>
+    `<tr>
+      <td>${l.label}</td>
+      <td><a href="${l.url}" target="_blank" style="color:var(--accent)">${l.url.slice(0,40)}...</a></td>
+      <td>${l.profile_name}</td>
+      <td><button class="secondary" onclick="deletePortfolio(${l.id})" style="font-size:0.72rem">Delete</button></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="4" style="color:var(--text-dim);text-align:center">No links</td></tr>';
+}
+
+async function addPortfolio() {
+  const label = document.getElementById('port-label').value.trim();
+  const url = document.getElementById('port-url').value.trim();
+  const profile = document.getElementById('port-profile').value;
+  if (!label || !url) return;
+  await fetch(API + '/desk/portfolio-links', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({label, url, profile_name: profile})
+  });
+  document.getElementById('port-label').value = '';
+  document.getElementById('port-url').value = '';
+  flash('Link added'); loadPortfolioLinks();
+}
+
+async function deletePortfolio(id) {
+  await fetch(API + `/desk/portfolio-links/${id}`, { method: 'DELETE' });
+  flash('Deleted'); loadPortfolioLinks();
+}
+
 // Init
-loadPipeline(); loadListings();
+loadPipeline(); loadListings(); loadProfiles();
 </script>
 </body>
 </html>

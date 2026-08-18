@@ -60,6 +60,48 @@ def adzuna_budget():
     return get_budget_status()
 
 
+# ── Profiles ─────────────────────────────────────────────────────────
+
+@router.get("/profiles")
+def list_profiles():
+    """List all named profiles and which is active."""
+    from .scoring.judge import _load_profile_yaml
+    index = _load_profile_yaml("profiles.yaml")
+    active = index.get("active", "")
+    profiles = []
+    for name, info in index.get("profiles", {}).items():
+        profiles.append({
+            "name": name,
+            "label": info.get("label", name),
+            "active": name == active,
+        })
+    return {"active": active, "profiles": profiles}
+
+
+class ProfileSwitch(BaseModel):
+    name: str
+
+
+@router.post("/profiles/switch")
+def switch_profile(body: ProfileSwitch):
+    """Switch active profile and rescore all listings."""
+    from .scoring.judge import _load_profile_yaml, _PROFILES_DIR, score_all
+    import yaml
+
+    index_path = _PROFILES_DIR / "profiles.yaml"
+    index = _load_profile_yaml("profiles.yaml")
+    available = list(index.get("profiles", {}).keys())
+    if body.name not in available:
+        raise HTTPException(422, f"Profile '{body.name}' not found. Available: {available}")
+
+    index["active"] = body.name
+    with open(index_path, "w", encoding="utf-8") as f:
+        yaml.dump(index, f, default_flow_style=False, sort_keys=False)
+
+    stats = score_all(profile_name=body.name)
+    return {"active": body.name, "scored": stats["scored"], "dealbreakers": stats["dealbreakers"]}
+
+
 # ── Sniffer ──────────────────────────────────────────────────────────
 
 @router.post("/sniff")
@@ -396,20 +438,59 @@ def list_resumes(profile_name: str | None = None):
     return {"resumes": [dict(r) for r in rows]}
 
 
+@router.get("/resumes/{resume_id}/download")
+def download_resume(resume_id: int):
+    """Download a stored resume file."""
+    from fastapi.responses import FileResponse
+    conn = get_connection()
+    row = conn.execute("SELECT filename, file_path FROM resumes WHERE id = ?", (resume_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404, f"Resume {resume_id} not found")
+    from pathlib import Path
+    path = Path(row["file_path"])
+    if not path.exists():
+        raise HTTPException(404, f"Resume file missing from disk: {row['filename']}")
+    return FileResponse(path, filename=row["filename"])
+
+
+@router.delete("/resumes/{resume_id}")
+def delete_resume(resume_id: int):
+    """Delete a resume file and its database record."""
+    conn = get_connection()
+    row = conn.execute("SELECT file_path FROM resumes WHERE id = ?", (resume_id,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, f"Resume {resume_id} not found")
+    from pathlib import Path
+    path = Path(row["file_path"])
+    if path.exists():
+        path.unlink()
+    conn.execute("DELETE FROM resumes WHERE id = ?", (resume_id,))
+    conn.commit()
+    conn.close()
+    return {"deleted": resume_id}
+
+
+class PortfolioCreate(BaseModel):
+    label: str
+    url: str
+    profile_name: str = "fullstack"
+
+
 @router.post("/portfolio-links")
-def add_portfolio_link(label: str = Query(...), url: str = Query(...),
-                       profile_name: str = Query("fullstack")):
+def add_portfolio_link(body: PortfolioCreate):
     """Add a portfolio link attached to a profile."""
     conn = get_connection()
     now = datetime.utcnow().isoformat()
     cursor = conn.execute(
         "INSERT INTO portfolio_links (label, url, profile_name, created_at) VALUES (?, ?, ?, ?)",
-        (label, url, profile_name, now),
+        (body.label, body.url, body.profile_name, now),
     )
     conn.commit()
     link_id = cursor.lastrowid
     conn.close()
-    return {"id": link_id, "label": label, "url": url, "profile_name": profile_name}
+    return {"id": link_id, "label": body.label, "url": body.url, "profile_name": body.profile_name}
 
 
 @router.get("/portfolio-links")
@@ -425,3 +506,17 @@ def list_portfolio_links(profile_name: str | None = None):
         rows = conn.execute("SELECT * FROM portfolio_links ORDER BY created_at DESC").fetchall()
     conn.close()
     return {"links": [dict(r) for r in rows]}
+
+
+@router.delete("/portfolio-links/{link_id}")
+def delete_portfolio_link(link_id: int):
+    """Delete a portfolio link."""
+    conn = get_connection()
+    row = conn.execute("SELECT id FROM portfolio_links WHERE id = ?", (link_id,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, f"Portfolio link {link_id} not found")
+    conn.execute("DELETE FROM portfolio_links WHERE id = ?", (link_id,))
+    conn.commit()
+    conn.close()
+    return {"deleted": link_id}

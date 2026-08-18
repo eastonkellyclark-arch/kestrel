@@ -128,6 +128,16 @@ function App() {
       <header className="app-header">
         <h1><span className="brand">Kestrel</span></h1>
         <p className="tagline">Jobs and gigs, ranked and reasoned</p>
+        {state.data.profiles && state.data.profiles.length > 1 && (
+          <div className="profile-demo">
+            <span className="profile-label">Ranked for:</span>
+            {state.data.profiles.map(p => (
+              <span key={p.name} className={`profile-chip ${p.active ? 'active' : ''}`}>
+                {p.label}
+              </span>
+            ))}
+          </div>
+        )}
       </header>
 
       <FilterPanel

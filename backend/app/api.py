@@ -18,6 +18,24 @@ logger = logging.getLogger("kestrel.api")
 router = APIRouter()
 
 
+# ── Profiles (public, for showroom demo) ─────────────────────────────
+
+@router.get("/profiles")
+def list_profiles():
+    """List available scoring profiles. Public — used by showroom demo."""
+    from .scoring.judge import _load_profile_yaml
+    index = _load_profile_yaml("profiles.yaml")
+    active = index.get("active", "")
+    profiles = []
+    for name, info in index.get("profiles", {}).items():
+        profiles.append({
+            "name": name,
+            "label": info.get("label", name),
+            "active": name == active,
+        })
+    return {"active": active, "profiles": profiles}
+
+
 # ── Request/Response models ──────────────────────────────────────────
 
 class StatusUpdate(BaseModel):

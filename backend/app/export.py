@@ -105,12 +105,26 @@ def export_public(output_dir: Path) -> int:
         with open(detail_path, "w", encoding="utf-8") as f:
             json.dump(detail, f)
 
+    # Load profile info for the index
+    from .scoring.judge import load_active_profile, _load_profile_yaml
+    active_name, _, _ = load_active_profile()
+    try:
+        profiles_index = _load_profile_yaml("profiles.yaml")
+        profiles_meta = [
+            {"name": n, "label": info.get("label", n), "active": n == active_name}
+            for n, info in profiles_index.get("profiles", {}).items()
+        ]
+    except Exception:
+        profiles_meta = []
+
     # Write index
     index_path = output_dir / "index.json"
     with open(index_path, "w", encoding="utf-8") as f:
         json.dump({
             "exported_at": datetime.utcnow().isoformat(),
             "count": len(index_entries),
+            "active_profile": active_name,
+            "profiles": profiles_meta,
             "listings": index_entries,
         }, f)
 

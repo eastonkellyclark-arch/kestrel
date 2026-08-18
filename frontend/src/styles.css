@@ -61,6 +61,35 @@ body {
   margin-top: 0.25rem;
 }
 
+.profile-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.profile-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.profile-chip {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.profile-chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(96, 165, 250, 0.08);
+  font-weight: 600;
+}
+
 .app-footer {
   text-align: center;
   padding: 2rem 0;
