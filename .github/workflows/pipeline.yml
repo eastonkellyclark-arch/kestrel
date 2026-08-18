@@ -153,3 +153,4 @@ jobs:
           echo "Summary:"
           cat fetch_summary.json 2>/dev/null || echo "No summary available"
           # Future: add Slack/email notification here
+
