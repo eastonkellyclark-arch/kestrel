@@ -5,6 +5,7 @@ Per-company failure isolation: one dead slug never aborts the run.
 
 import logging
 
+from .settings import settings
 from .adapters import greenhouse, lever, ashby, recruitee
 from .adapters import adzuna as adzuna_adapter
 from .adapters import usajobs as usajobs_adapter
