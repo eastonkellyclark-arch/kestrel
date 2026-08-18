@@ -37,6 +37,15 @@ def score(
     bonus = profile.get("skills", {}).get("bonus", [])
     synonyms = profile.get("skills", {}).get("synonyms", {})
 
+    # Supply posts (competitors advertising) get zero skill score —
+    # they match skills precisely because they're competitors, not clients.
+    if description_quality == "supply_post":
+        return 0.0, {
+            "primary_hits": [], "secondary_hits": [], "bonus_hits": [],
+            "title_hits": [], "quality_penalty": True,
+            "supply_post": True,
+        }
+
     quality_penalty = 0.0
     if description_quality in ("good", "truncated"):
         full_text = f"{title} {description}"
@@ -44,7 +53,7 @@ def score(
             quality_penalty = 0.15  # lighter penalty — real content, just less of it
     else:
         full_text = title
-        quality_penalty = 0.3  # empty/non_english — title only
+        quality_penalty = 0.3  # empty/non_english/filtered — title only
 
     found_primary = _find_skills(full_text, primary, synonyms)
     found_secondary = _find_skills(full_text, secondary, synonyms)

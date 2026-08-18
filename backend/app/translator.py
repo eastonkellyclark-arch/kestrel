@@ -568,9 +568,12 @@ def _parse_gmail_alert(raw: dict, board_slug: str) -> dict | None:
 def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
     """Parse a gig feed item (Google Alerts, Reddit, Craigslist, HN).
 
-    These are noisy — the scorer filters. We store everything.
-    listing_type is set to 'gig' so the right scorer and profile are used.
+    Classifies demand vs supply at translate time. Supply posts (competitors
+    advertising themselves) are stored but marked description_quality="supply_post"
+    so the scorer zeroes them out. Vault keeps everything.
     """
+    from .gig_classify import classify as classify_demand
+
     source_id = str(raw.get("source_id", raw.get("id", "")))
     if not source_id:
         return None
@@ -599,8 +602,19 @@ def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
         location=location, title=title, description=desc_plain,
     )
 
+    # Classify demand vs supply
+    gig_class = classify_demand(title, desc_plain)
+    desc_quality = classify_description(desc_plain, title)
+
+    # Supply posts: mark so scorer treats them as zero-value.
+    # Still stored — can see what was classified and override if wrong.
+    if gig_class == "supply":
+        desc_quality = "supply_post"
+
+    source_name = board_slug.split("-")[0] if "-" in board_slug else board_slug
+
     return {
-        "source": board_slug.split("-")[0] if "-" in board_slug else board_slug,
+        "source": source_name,
         "source_id": source_id,
         "board_slug": board_slug,
         "listing_type": "gig",
@@ -615,7 +629,7 @@ def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
         "department": "",
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
-        "description_quality": classify_description(desc_plain, title),
+        "description_quality": desc_quality,
     }
 
 
@@ -651,19 +665,29 @@ def _load_quality_gate() -> dict:
 def _check_quality_gate(record: dict, gate: dict) -> str | None:
     """Check if a parsed record should be filtered. Returns reason or None."""
     source = record.get("source", "")
+
+    # Title-based gate (RemoteOK etc.)
     gated_sources = gate.get("gated_sources", [])
-    if source not in gated_sources:
-        return None
+    if source in gated_sources:
+        title = record.get("title_display", "").strip()
+        min_words = gate.get("min_title_words", 3)
+        if len(title.split()) < min_words:
+            return f"title too short ({len(title.split())} words): '{title}'"
+        title_lower = title.lower()
+        for phrase in gate.get("spam_phrases", []):
+            if phrase.lower() in title_lower:
+                return f"spam phrase '{phrase}' in title"
 
-    title = record.get("title_display", "").strip()
-    min_words = gate.get("min_title_words", 3)
-    if len(title.split()) < min_words:
-        return f"title too short ({len(title.split())} words): '{title}'"
-
-    title_lower = title.lower()
-    for phrase in gate.get("spam_phrases", []):
-        if phrase.lower() in title_lower:
-            return f"spam phrase '{phrase}' in title"
+    # Content-based gate (HN comments — synthetic titles, check description)
+    content_gated = gate.get("content_gated_sources", [])
+    if source in content_gated:
+        desc = record.get("description", "")
+        # Strip HTML for word counting
+        desc_plain = re.sub(r"<[^>]+>", " ", desc)
+        min_content = gate.get("min_content_words", 10)
+        word_count = len(desc_plain.split())
+        if word_count < min_content:
+            return f"content too short ({word_count} words)"
 
     return None
 

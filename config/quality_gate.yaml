@@ -22,3 +22,12 @@ spam_phrases:
 # ATS boards have structured data and don't need it.
 gated_sources:
   - remoteok
+
+# Sources where the quality gate checks description content instead of title.
+# HN comments have synthetic titles ("HN Freelancer: username") — check
+# the comment text for minimum length instead.
+content_gated_sources:
+  - hn_freelancer
+
+# Minimum word count in description for content-gated sources.
+min_content_words: 10
