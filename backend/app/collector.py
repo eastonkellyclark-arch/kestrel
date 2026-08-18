@@ -5,7 +5,9 @@ Per-company failure isolation: one dead slug never aborts the run.
 
 import logging
 
-from .adapters import greenhouse, lever, ashby, workable, recruitee
+from .adapters import greenhouse, lever, ashby, recruitee
+from .adapters import adzuna as adzuna_adapter
+from .adapters import usajobs as usajobs_adapter
 from .models import ATSPlatform, FetchOutcome, FetchResult
 from .repository import get_active_companies
 
@@ -15,7 +17,6 @@ ADAPTERS = {
     ATSPlatform.GREENHOUSE: greenhouse.fetch,
     ATSPlatform.LEVER: lever.fetch,
     ATSPlatform.ASHBY: ashby.fetch,
-    ATSPlatform.WORKABLE: workable.fetch,
     ATSPlatform.RECRUITEE: recruitee.fetch,
 }
 
@@ -28,13 +29,15 @@ OUTCOME_LABELS = {
 }
 
 
-def fetch_all() -> list[FetchResult]:
+def fetch_all(include_aggregators: bool = True) -> list[FetchResult]:
+    """Fetch from all active registry companies, optionally including aggregators."""
     companies = get_active_companies()
     if not companies:
         logger.warning("Registry is empty — nothing to fetch")
-        return []
 
     results: list[FetchResult] = []
+
+    # ATS boards
     for entry in companies:
         adapter = ADAPTERS.get(entry.platform)
         if not adapter:
@@ -44,6 +47,21 @@ def fetch_all() -> list[FetchResult]:
         logger.info("Fetching %s (%s/%s)...", entry.company, entry.platform.value, entry.board_slug)
         result = adapter(entry.company, entry.board_slug)
         results.append(result)
+
+    # Aggregators
+    if include_aggregators:
+        logger.info("Fetching Adzuna...")
+        results.append(adzuna_adapter.fetch(
+            keywords=["software engineer", "developer"],
+            location="Minnesota",
+            pages=1,
+        ))
+        logger.info("Fetching USAJobs...")
+        results.append(usajobs_adapter.fetch(
+            keywords=["information technology", "software"],
+            location="Minnesota",
+            pages=1,
+        ))
 
     return results
 

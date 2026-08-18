@@ -100,7 +100,7 @@ textarea{width:100%;resize:vertical;min-height:60px}
 <h2>Company Registry</h2>
 <div class="form-row">
   <input type="text" id="reg-company" placeholder="Company name">
-  <select id="reg-platform"><option value="greenhouse">Greenhouse</option><option value="lever">Lever</option><option value="ashby">Ashby</option><option value="workable">Workable</option><option value="recruitee">Recruitee</option></select>
+  <select id="reg-platform"><option value="greenhouse">Greenhouse</option><option value="lever">Lever</option><option value="ashby">Ashby</option><option value="recruitee">Recruitee</option></select>
   <input type="text" id="reg-slug" placeholder="Board slug">
   <button onclick="addRegistry()">Add</button>
 </div>

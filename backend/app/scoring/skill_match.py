@@ -38,11 +38,13 @@ def score(
     synonyms = profile.get("skills", {}).get("synonyms", {})
 
     quality_penalty = 0.0
-    if description_quality == "good":
+    if description_quality in ("good", "truncated"):
         full_text = f"{title} {description}"
+        if description_quality == "truncated":
+            quality_penalty = 0.15  # lighter penalty — real content, just less of it
     else:
         full_text = title
-        quality_penalty = 0.3
+        quality_penalty = 0.3  # empty/non_english — title only
 
     found_primary = _find_skills(full_text, primary, synonyms)
     found_secondary = _find_skills(full_text, secondary, synonyms)

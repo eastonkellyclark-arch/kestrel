@@ -9,7 +9,6 @@ class ATSPlatform(str, Enum):
     GREENHOUSE = "greenhouse"
     LEVER = "lever"
     ASHBY = "ashby"
-    WORKABLE = "workable"
     RECRUITEE = "recruitee"
 
 

@@ -128,8 +128,8 @@ descriptions, no agency noise.
 Greenhouse  https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true
 Lever       https://api.lever.co/v0/postings/{slug}?mode=json
 Ashby       https://api.ashbyhq.com/posting-api/job-board/{slug}
-Workable    public board endpoint per account
-Recruitee   public board endpoint per account
+Recruitee   https://{slug}.recruitee.com/api/offers
+Workable    PUBLIC API CLOSED as of Aug 2026 — returns 0 for all companies
 ```
 
 **Query-by-company, not query-by-location.** No endpoint enumerates which

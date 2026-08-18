@@ -244,7 +244,7 @@ def _parse_adzuna(raw: dict, board_slug: str) -> dict | None:
         "department": "",
         "is_remote": int(is_remote),
         "remote_confidence": remote_conf,
-        "description_quality": classify_description(desc_plain, title),
+        "description_quality": classify_description(desc_plain, title, source="adzuna"),
     }
 
 
@@ -312,13 +312,137 @@ def _parse_usajobs(raw: dict, board_slug: str) -> dict | None:
     }
 
 
+def _parse_ashby(raw: dict, board_slug: str) -> dict | None:
+    """Parse an Ashby raw job record."""
+    source_id = str(raw.get("id", ""))
+    if not source_id:
+        return None
+
+    title = raw.get("title", "").strip()
+    if not title:
+        return None
+
+    # Ashby doesn't include company name — resolved from registry below
+    company = board_slug
+
+    location = raw.get("location", "")
+    # Include secondary locations
+    secondary = raw.get("secondaryLocations", [])
+    if secondary:
+        sec_names = [s.get("location", "") for s in secondary if isinstance(s, dict)]
+        if sec_names:
+            location = "; ".join([location] + [s for s in sec_names if s])
+
+    # Description — Ashby provides both HTML and plain
+    desc_html = raw.get("descriptionHtml", "")
+    desc_plain = raw.get("descriptionPlain", "")
+    description = _sanitize_html(desc_html) if desc_html else desc_plain
+    if not desc_plain and desc_html:
+        desc_plain = _strip_html(desc_html)
+
+    url = raw.get("jobUrl", "")
+    posted_at = raw.get("publishedAt", "")
+    if posted_at:
+        posted_at = posted_at[:19]
+
+    department = raw.get("department", "")
+
+    # Ashby has explicit isRemote and workplaceType fields
+    workplace_type = raw.get("workplaceType", "")
+    is_remote_flag = raw.get("isRemote", False)
+
+    is_remote, remote_conf = detect_remote(
+        location=location, title=title, description=desc_plain,
+        workplace_type="remote" if is_remote_flag else workplace_type.lower(),
+    )
+
+    return {
+        "source": "ashby",
+        "source_id": source_id,
+        "board_slug": board_slug,
+        "listing_type": "job",
+        "title_display": title,
+        "company_display": company,
+        "location_display": location,
+        "title_normalized": normalize_title(title),
+        "company_normalized": normalize_company(company),
+        "description": description,
+        "url": url,
+        "posted_at": posted_at,
+        "department": department,
+        "is_remote": int(is_remote),
+        "remote_confidence": remote_conf,
+        "description_quality": classify_description(desc_plain, title),
+    }
+
+
+def _parse_recruitee(raw: dict, board_slug: str) -> dict | None:
+    """Parse a Recruitee raw offer record."""
+    source_id = str(raw.get("id", ""))
+    if not source_id:
+        return None
+
+    title = raw.get("title", "").strip()
+    if not title:
+        return None
+
+    company = raw.get("company_name", board_slug).strip()
+
+    location = raw.get("location", "")
+    city = raw.get("city", "")
+    country = raw.get("country", "")
+    if not location and city:
+        location = f"{city}, {country}" if country else city
+
+    # Description — Recruitee provides HTML in description + requirements
+    desc_html = raw.get("description", "")
+    req_html = raw.get("requirements", "")
+    full_html = desc_html
+    if req_html:
+        full_html += "\n<h3>Requirements</h3>\n" + req_html
+    description = _sanitize_html(full_html)
+    desc_plain = _strip_html(full_html)
+
+    url = raw.get("careers_url", raw.get("careers_apply_url", ""))
+    posted_at = raw.get("published_at", raw.get("created_at", ""))
+    if posted_at:
+        posted_at = posted_at[:19]
+
+    department = raw.get("department", "")
+
+    is_remote_flag = raw.get("remote", False)
+    is_remote, remote_conf = detect_remote(
+        location=location, title=title, description=desc_plain,
+        workplace_type="remote" if is_remote_flag else "",
+    )
+
+    return {
+        "source": "recruitee",
+        "source_id": source_id,
+        "board_slug": board_slug,
+        "listing_type": "job",
+        "title_display": title,
+        "company_display": company,
+        "location_display": location,
+        "title_normalized": normalize_title(title),
+        "company_normalized": normalize_company(company),
+        "description": description,
+        "url": url,
+        "posted_at": posted_at,
+        "department": department,
+        "is_remote": int(is_remote),
+        "remote_confidence": remote_conf,
+        "description_quality": classify_description(desc_plain, title),
+    }
+
+
 PARSERS = {
     "greenhouse": _parse_greenhouse,
     "lever": _parse_lever,
     "adzuna": _parse_adzuna,
     "usajobs": _parse_usajobs,
-    "ashby": _parse_greenhouse,  # Ashby uses same structure as Greenhouse
-    "recruitee": _parse_greenhouse,  # placeholder — will need its own parser
+    "ashby": _parse_ashby,
+    "recruitee": _parse_recruitee,
 }
 
 
@@ -362,9 +486,10 @@ def translate_all() -> dict:
             stats["skipped"] += 1
             continue
 
-        # Resolve company name from registry for Lever
-        if source == "lever":
-            real_name = slug_to_company.get(("lever", row["board_slug"]), row["board_slug"])
+        # Resolve company name from registry for platforms that don't
+        # include it in the posting data (Lever, Ashby)
+        if source in ("lever", "ashby"):
+            real_name = slug_to_company.get((source, row["board_slug"]), row["board_slug"])
             record["company_display"] = real_name
             record["company_normalized"] = normalize_company(real_name)
 

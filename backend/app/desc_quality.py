@@ -16,11 +16,17 @@ _ENGLISH_MARKERS = {
 }
 _MIN_ENGLISH_HITS = 5
 _MIN_DESCRIPTION_LENGTH = 80  # characters
+_TRUNCATED_MAX_LENGTH = 500  # Adzuna snippets are ~200-300 chars
 _WORD_RE = re.compile(r"[a-z]+")
 
 
-def classify(description: str, title: str) -> str:
-    """Return quality label: 'good', 'empty', 'title_only', 'non_english'."""
+def classify(description: str, title: str, source: str = "") -> str:
+    """Return quality label: 'good', 'truncated', 'empty', 'title_only', 'non_english'.
+
+    'truncated' means the description is real but short — Adzuna snippets are
+    ~200-300 chars. The scorer should use what's there but not penalize
+    a good role for being summarized.
+    """
     if not description or not description.strip():
         return "empty"
 
@@ -43,5 +49,9 @@ def classify(description: str, title: str) -> str:
     english_hits = len(words & _ENGLISH_MARKERS)
     if english_hits < _MIN_ENGLISH_HITS:
         return "non_english"
+
+    # Truncated: real content but short (Adzuna snippets, aggregator summaries)
+    if len(desc) < _TRUNCATED_MAX_LENGTH or source in ("adzuna",):
+        return "truncated"
 
     return "good"

@@ -2,6 +2,10 @@
 
 Takes a URL, fetches it, inspects the HTML for ATS signatures.
 On failure, returns what it found so the user can provide the slug manually.
+
+Workable removed — public API returns 0 results for all tested companies
+as of Aug 2026. Detection patterns kept so the Sniffer can identify the
+platform and tell the user "this is Workable, but there's no public API."
 """
 
 import logging
@@ -35,9 +39,6 @@ _URL_PATTERNS = [
     # Ashby
     (re.compile(r"jobs\.ashbyhq\.com/([^/?\s]+)", re.I), "ashby",
      lambda m: m.group(1)),
-    # Workable
-    (re.compile(r"apply\.workable\.com/([^/?\s]+)", re.I), "workable",
-     lambda m: m.group(1)),
     # Recruitee
     (re.compile(r"([^/.\s]+)\.recruitee\.com", re.I), "recruitee",
      lambda m: m.group(1)),
@@ -56,10 +57,6 @@ _HTML_PATTERNS = [
     # Ashby embed
     (re.compile(r"jobs\.ashbyhq\.com/([^/\"'\s]+)", re.I), "ashby",
      lambda m: m.group(1)),
-    # Workable embed
-    (re.compile(r"apply\.workable\.com/([^/\"'\s]+)", re.I), "workable",
-     lambda m: m.group(1)),
-    (re.compile(r'whr-embed["\']', re.I), "workable", None),
     # Recruitee embed
     (re.compile(r"([^/\"'\s]+)\.recruitee\.com", re.I), "recruitee",
      lambda m: m.group(1)),
@@ -101,7 +98,7 @@ def sniff(url: str, timeout: float = 15.0) -> SniffResult:
                                f"Redirected to {platform} URL: {final_url}")
 
     # Check HTML body
-    html = resp.text[:100_000]  # limit scan to first 100KB
+    html = resp.text[:100_000]
     for pattern, platform, extractor in _HTML_PATTERNS:
         m = pattern.search(html)
         if m:
@@ -127,16 +124,13 @@ def _derive_slug_guesses(url: str) -> list[str]:
     from urllib.parse import urlparse
     parsed = urlparse(url)
     host = parsed.hostname or ""
-    # Strip common prefixes/suffixes
     parts = host.replace("www.", "").replace("careers.", "").replace("jobs.", "").split(".")
     if not parts:
         return []
-    base = parts[0]  # e.g. "cloudflare" from "www.cloudflare.com"
+    base = parts[0]
     guesses = [base]
-    # Also try without hyphens and with common suffixes
     if "-" in base:
         guesses.append(base.replace("-", ""))
-    # Try "companyinc", "companyhq" variants
     guesses.append(base + "inc")
     guesses.append(base + "hq")
     return guesses
@@ -150,9 +144,6 @@ _PROBE_ENDPOINTS = [
      lambda d: isinstance(d, list)),
     ("ashby", "https://api.ashbyhq.com/posting-api/job-board/{slug}",
      lambda d: "jobs" in d),
-    # Workable uses POST on v2; the probe uses v1 account info endpoint instead
-    ("workable", "https://apply.workable.com/api/v1/accounts/{slug}",
-     lambda d: "subdomain" in d),
 ]
 
 
