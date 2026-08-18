@@ -48,18 +48,28 @@ def _load_profile_yaml(filename: str) -> dict:
 
 
 def load_active_profile() -> tuple[str, dict, dict]:
-    """Load the active named profile. Returns (name, profile, weights)."""
+    """Load the active named profile. Returns (name, profile, weights).
+
+    Fails loudly if profiles.yaml is missing or the active profile doesn't exist.
+    No silent fallback — a broken config must be visible, not scored against stale defaults.
+    """
     index_path = _PROFILES_DIR / "profiles.yaml"
     if not index_path.exists():
-        # Fallback to legacy single-file profiles
-        return "default", _load_yaml("profile.yaml"), _load_yaml("weights.yaml")
+        raise FileNotFoundError(
+            f"config/profiles/profiles.yaml not found. "
+            f"Expected at {index_path}. No fallback — fix the config."
+        )
     index = _load_profile_yaml("profiles.yaml")
-    active_name = index.get("active", "fullstack")
+    active_name = index.get("active")
+    if not active_name:
+        raise ValueError("profiles.yaml has no 'active' field. Set it to a profile name.")
     profile_info = index.get("profiles", {}).get(active_name)
     if not profile_info:
-        logger.warning("Profile '%s' not found, falling back to fullstack", active_name)
-        active_name = "fullstack"
-        profile_info = index["profiles"]["fullstack"]
+        available = list(index.get("profiles", {}).keys())
+        raise ValueError(
+            f"Profile '{active_name}' not found in profiles.yaml. "
+            f"Available: {available}"
+        )
     profile = _load_profile_yaml(profile_info["profile"])
     weights = _load_profile_yaml(profile_info["weights"])
     return active_name, profile, weights

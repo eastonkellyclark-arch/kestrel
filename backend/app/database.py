@@ -110,6 +110,7 @@ def init_db() -> None:
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             listing_id  INTEGER NOT NULL REFERENCES listings(id),
             old_status  TEXT,
+            resume_id   INTEGER REFERENCES resumes(id),  -- which resume was attached when applied
             new_status  TEXT NOT NULL,
             note        TEXT,
             changed_at  TEXT NOT NULL
@@ -125,6 +126,23 @@ def init_db() -> None:
         );
 
         CREATE INDEX IF NOT EXISTS idx_notes_listing ON notes(listing_id);
+
+        CREATE TABLE IF NOT EXISTS resumes (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            label       TEXT NOT NULL,
+            filename    TEXT NOT NULL,
+            file_path   TEXT NOT NULL,
+            profile_name TEXT,  -- which profile this resume is for
+            created_at  TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS portfolio_links (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            label       TEXT NOT NULL,
+            url         TEXT NOT NULL,
+            profile_name TEXT,
+            created_at  TEXT NOT NULL
+        );
 
         INSERT OR IGNORE INTO _meta (key, value) VALUES ('schema_version', '4');
         """

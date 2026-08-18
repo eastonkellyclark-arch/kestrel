@@ -10,6 +10,7 @@ import csv
 import io
 import json
 import logging
+import re
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
@@ -32,6 +33,7 @@ VALID_STATUSES = {"new", "interested", "applied", "responded", "interview", "clo
 class StatusChange(BaseModel):
     status: str
     note: str | None = None
+    resume_id: int | None = None  # which resume was used (for "applied")
 
 
 class NoteCreate(BaseModel):
@@ -93,8 +95,8 @@ def update_status(listing_id: int, body: StatusChange):
 
     conn.execute("UPDATE listings SET status = ? WHERE id = ?", (body.status, listing_id))
     conn.execute(
-        "INSERT INTO status_history (listing_id, old_status, new_status, note, changed_at) VALUES (?, ?, ?, ?, ?)",
-        (listing_id, old_status, body.status, body.note, now),
+        "INSERT INTO status_history (listing_id, old_status, new_status, note, resume_id, changed_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (listing_id, old_status, body.status, body.note, body.resume_id, now),
     )
     conn.commit()
     conn.close()
@@ -336,3 +338,90 @@ def update_registry(entry_id: int, active: bool = Query(...)):
             break
     save_registry(reg)
     return {"id": entry_id, "active": active}
+
+
+# ── Resume & portfolio storage ───────────────────────────────────────
+
+from fastapi import UploadFile, File, Form
+from .settings import settings
+
+
+@router.post("/resumes")
+async def upload_resume(
+    file: UploadFile = File(...),
+    label: str = Form(...),
+    profile_name: str = Form("fullstack"),
+):
+    """Upload a resume file. Stored outside the repo in data_dir/resumes/."""
+    resumes_dir = settings.data_dir / "resumes"
+    resumes_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate unique filename
+    now = datetime.utcnow()
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    safe_name = re.sub(r"[^\w.-]", "_", file.filename or "resume")
+    stored_name = f"{timestamp}_{safe_name}"
+    file_path = resumes_dir / stored_name
+
+    content = await file.read()
+    file_path.write_bytes(content)
+
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO resumes (label, filename, file_path, profile_name, created_at) VALUES (?, ?, ?, ?, ?)",
+        (label, file.filename, str(file_path), profile_name, now.isoformat()),
+    )
+    conn.commit()
+    resume_id = cursor.lastrowid
+    conn.close()
+
+    return {"id": resume_id, "label": label, "filename": file.filename,
+            "profile_name": profile_name, "created_at": now.isoformat()}
+
+
+@router.get("/resumes")
+def list_resumes(profile_name: str | None = None):
+    """List all resumes, optionally filtered by profile."""
+    conn = get_connection()
+    if profile_name:
+        rows = conn.execute(
+            "SELECT id, label, filename, profile_name, created_at FROM resumes WHERE profile_name = ? ORDER BY created_at DESC",
+            (profile_name,),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT id, label, filename, profile_name, created_at FROM resumes ORDER BY created_at DESC"
+        ).fetchall()
+    conn.close()
+    return {"resumes": [dict(r) for r in rows]}
+
+
+@router.post("/portfolio-links")
+def add_portfolio_link(label: str = Query(...), url: str = Query(...),
+                       profile_name: str = Query("fullstack")):
+    """Add a portfolio link attached to a profile."""
+    conn = get_connection()
+    now = datetime.utcnow().isoformat()
+    cursor = conn.execute(
+        "INSERT INTO portfolio_links (label, url, profile_name, created_at) VALUES (?, ?, ?, ?)",
+        (label, url, profile_name, now),
+    )
+    conn.commit()
+    link_id = cursor.lastrowid
+    conn.close()
+    return {"id": link_id, "label": label, "url": url, "profile_name": profile_name}
+
+
+@router.get("/portfolio-links")
+def list_portfolio_links(profile_name: str | None = None):
+    """List portfolio links, optionally filtered by profile."""
+    conn = get_connection()
+    if profile_name:
+        rows = conn.execute(
+            "SELECT * FROM portfolio_links WHERE profile_name = ? ORDER BY created_at DESC",
+            (profile_name,),
+        ).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM portfolio_links ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return {"links": [dict(r) for r in rows]}

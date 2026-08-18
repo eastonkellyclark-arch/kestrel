@@ -372,6 +372,13 @@ body {
   color: var(--text-dim);
 }
 
+.tag.exp-unknown {
+  background: none;
+  color: var(--text-dim);
+  opacity: 0.5;
+  font-style: italic;
+}
+
 /* ── Detail view ───────────────────────────── */
 
 .detail-page {

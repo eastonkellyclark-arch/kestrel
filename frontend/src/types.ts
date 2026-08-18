@@ -27,6 +27,7 @@ export interface BreakdownDetail {
   };
   degree_posture?: { posture?: string; reason?: string };
   freshness?: { days_old?: number | null; reason?: string };
+  experience_fit?: { experience?: string; required?: number; gap?: number };
   location_fit?: { fit?: string; reason?: string };
   seniority_fit?: { level?: string; matched?: string };
 }

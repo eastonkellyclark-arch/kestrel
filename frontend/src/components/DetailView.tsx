@@ -105,6 +105,22 @@ function buildWhyText(detail: ListingDetail): string[] {
     lines.push(`${daysAgoText(fr.days_old).charAt(0).toUpperCase() + daysAgoText(fr.days_old).slice(1)}.`);
   }
 
+  // Experience
+  const ef = (d as Record<string, any>).experience_fit;
+  if (ef?.experience === 'none_required') {
+    lines.push('No experience required \u2014 best fit for your level.');
+  } else if (ef?.experience === 'at_or_below') {
+    lines.push(`Requires ${ef.required} year${ef.required !== 1 ? 's' : ''} \u2014 at or below your experience.`);
+  } else if (ef?.experience === 'mild_stretch') {
+    lines.push(`Requires ${ef.required} years (you have ${ef.required - ef.gap}) \u2014 a stretch but doable.`);
+  } else if (ef?.experience === 'significant_gap') {
+    lines.push(`Requires ${ef.required} years (you have ${ef.required - ef.gap}) \u2014 significant experience gap.`);
+  } else if (ef?.experience === 'heavy_gap') {
+    lines.push(`Requires ${ef.required} years (you have ${ef.required - ef.gap}) \u2014 well above your experience level.`);
+  } else if (ef?.experience === 'not_mentioned') {
+    lines.push('Experience requirement not stated \u2014 scored neutral.');
+  }
+
   // Seniority
   const sf = d.seniority_fit;
   if (sf?.level === 'too_senior') {
