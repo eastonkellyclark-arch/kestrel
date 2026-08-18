@@ -44,6 +44,16 @@ def export_public(output_dir: Path) -> int:
             weights = yaml.safe_load(f)
         all_profiles[pname] = (pinfo.get("label", pname), profile, weights)
 
+    # Load gig weights once — fail loudly if missing
+    gig_weights_path = _PROFILES_DIR.parent / "gig_weights.yaml"
+    if not gig_weights_path.exists():
+        raise FileNotFoundError(
+            f"config/gig_weights.yaml not found at {gig_weights_path}. "
+            f"Required for scoring gig listings. No fallback."
+        )
+    with open(gig_weights_path, encoding="utf-8") as f:
+        gig_weights = yaml.safe_load(f)
+
     conn = get_connection()
     rows = conn.execute(
         """
@@ -75,20 +85,12 @@ def export_public(output_dir: Path) -> int:
         breakdown = json.loads(record["score_breakdown"]) if record["score_breakdown"] else {}
 
         # Score this listing under each profile
-        # Gigs use gig weights (budget_signal etc.), job profiles don't have those.
-        # Load gig weights once for gig listings.
         profile_scores = {}
+        profile_breakdowns = {}
         for pname, (plabel, profile, weights) in all_profiles.items():
             lt = record["listing_type"]
             if lt == "gig":
-                # Gigs always use gig weights — the profile only changes skills/experience
-                try:
-                    gig_weights_path = _PROFILES_DIR.parent / "gig_weights.yaml"
-                    with open(gig_weights_path, encoding="utf-8") as f:
-                        gig_w = yaml.safe_load(f)
-                except FileNotFoundError:
-                    gig_w = weights
-                composite, bd = score_gig_listing(record, profile, gig_w, now)
+                composite, bd = score_gig_listing(record, profile, gig_weights, now)
             else:
                 composite, bd = score_listing(record, profile, weights, now)
             profile_scores[pname] = {
@@ -96,6 +98,20 @@ def export_public(output_dir: Path) -> int:
                 "skill_factor": bd.get("skill_factor"),
                 "scale_label": bd.get("scale_label"),
                 "hygiene_score": bd.get("hygiene_score"),
+            }
+            profile_breakdowns[pname] = {
+                "composite": bd.get("composite"),
+                "hygiene_score": bd.get("hygiene_score"),
+                "skill_factor": bd.get("skill_factor"),
+                "scale_label": bd.get("scale_label"),
+                "dimensions": bd.get("dimensions", {}),
+                "detail": {
+                    k: bd.get("detail", {}).get(k, {})
+                    for k in ("skill_match", "degree_posture", "freshness",
+                              "location_fit", "seniority_fit", "experience_fit",
+                              "source_quality", "budget_signal", "locality", "competition")
+                    if k in bd.get("detail", {})
+                },
             }
 
         # Index entry: summary without description
@@ -119,7 +135,7 @@ def export_public(output_dir: Path) -> int:
             "profiles": profile_scores,
         })
 
-        # Per-listing detail file: full description + breakdown
+        # Per-listing detail file: full description + per-profile breakdowns
         detail = {
             "id": listing_id,
             "listing_type": record["listing_type"],
@@ -135,20 +151,8 @@ def export_public(output_dir: Path) -> int:
             "description": record["description"],
             "score": record["score"],
             "degree_hard_required": bool(record["degree_hard_required"]),
-            "breakdown": {
-                "composite": breakdown.get("composite"),
-                "hygiene_score": breakdown.get("hygiene_score"),
-                "skill_factor": breakdown.get("skill_factor"),
-                "scale_label": breakdown.get("scale_label"),
-                "dimensions": breakdown.get("dimensions", {}),
-                "detail": {
-                    "skill_match": breakdown.get("detail", {}).get("skill_match", {}),
-                    "degree_posture": breakdown.get("detail", {}).get("degree_posture", {}),
-                    "freshness": breakdown.get("detail", {}).get("freshness", {}),
-                    "location_fit": breakdown.get("detail", {}).get("location_fit", {}),
-                    "seniority_fit": breakdown.get("detail", {}).get("seniority_fit", {}),
-                },
-            },
+            "breakdown": profile_breakdowns.get(active_name, {}),
+            "profile_breakdowns": profile_breakdowns,
         }
         detail_path = listings_dir / f"{listing_id}.json"
         with open(detail_path, "w", encoding="utf-8") as f:

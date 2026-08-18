@@ -3,6 +3,7 @@ import type { ListingDetail } from '../types';
 interface Props {
   detail: ListingDetail | null;
   loading: boolean;
+  activeProfile?: string;
   onBack: () => void;
 }
 
@@ -132,7 +133,7 @@ function buildWhyText(detail: ListingDetail): string[] {
   return lines;
 }
 
-export function DetailView({ detail, loading, onBack }: Props) {
+export function DetailView({ detail, loading, activeProfile, onBack }: Props) {
   if (loading) {
     return (
       <div className="detail-page">
@@ -151,17 +152,22 @@ export function DetailView({ detail, loading, onBack }: Props) {
     );
   }
 
-  const bd = detail.breakdown;
+  // Use the selected profile's breakdown if available
+  const bd = (activeProfile && detail.profile_breakdowns?.[activeProfile])
+    ? detail.profile_breakdowns[activeProfile]
+    : detail.breakdown;
   const dims = bd?.dimensions ?? {};
-  const whyLines = bd ? buildWhyText(detail) : [];
+  // Build "Why" text from the profile-specific breakdown
+  const whyDetail = { ...detail, breakdown: bd } as ListingDetail;
+  const whyLines = bd ? buildWhyText(whyDetail) : [];
 
   return (
     <div className="detail-page">
       <button type="button" className="back-btn" onClick={onBack}>&larr; Back to listings</button>
 
       <div className="detail-header">
-        <div className={`score-badge large ${(detail.score ?? 0) >= 50 ? 'high' : (detail.score ?? 0) >= 30 ? 'mid' : 'low'}`}>
-          {detail.score?.toFixed(0) ?? '--'}
+        <div className={`score-badge large ${(bd?.composite ?? 0) >= 50 ? 'high' : (bd?.composite ?? 0) >= 30 ? 'mid' : 'low'}`}>
+          {bd?.composite?.toFixed(0) ?? '--'}
         </div>
         <div>
           <h1 className="detail-title">{detail.title}</h1>

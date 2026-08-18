@@ -134,6 +134,7 @@ function App() {
       <DetailView
         detail={detail}
         loading={detailLoading}
+        activeProfile={activeProfile}
         onBack={() => { setSelectedId(null); setDetail(null); }}
       />
     );

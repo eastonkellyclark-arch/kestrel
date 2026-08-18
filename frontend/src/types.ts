@@ -38,17 +38,20 @@ export interface BreakdownDetail {
   seniority_fit?: { level?: string; matched?: string };
 }
 
+export interface Breakdown {
+  composite: number;
+  hygiene_score: number;
+  skill_factor: number;
+  scale_label: string;
+  dimensions: Record<string, { score: number; weight?: number }>;
+  detail?: BreakdownDetail;
+}
+
 export interface ListingDetail extends ListingSummary {
   description: string | null;
   description_quality: string;
-  breakdown: {
-    composite: number;
-    hygiene_score: number;
-    skill_factor: number;
-    scale_label: string;
-    dimensions: Record<string, { score: number; weight?: number }>;
-    detail?: BreakdownDetail;
-  };
+  breakdown: Breakdown;
+  profile_breakdowns?: Record<string, Breakdown>;
 }
 
 export interface ProfileMeta {
