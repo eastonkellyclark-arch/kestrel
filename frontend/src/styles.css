@@ -68,6 +68,15 @@ body {
   font-size: 0.8rem;
 }
 
+.attribution a {
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+
+.attribution a:hover {
+  color: var(--accent);
+}
+
 /* ── State screens ─────────────────────────── */
 
 .state-screen {

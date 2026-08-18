@@ -436,6 +436,76 @@ def _parse_recruitee(raw: dict, board_slug: str) -> dict | None:
     }
 
 
+def _parse_remote_feed(raw: dict, board_slug: str) -> dict | None:
+    """Parse a remote feed job (RemoteOK, Remotive, We Work Remotely).
+
+    Everything on these feeds is remote by definition — set is_remote=True
+    unconditionally rather than relying on the heuristic.
+    """
+    source_id = str(raw.get("source_id", raw.get("id", "")))
+
+    # WWR stores raw RSS items — generate source_id from link
+    if not source_id and raw.get("link"):
+        source_id = re.sub(r"[^a-z0-9]", "-", raw["link"].lower().rsplit("/", 1)[-1])
+    if not source_id:
+        return None
+
+    title = raw.get("title", raw.get("position", "")).strip()
+    if not title:
+        return None
+
+    company = raw.get("company", raw.get("company_name", "")).strip()
+
+    # WWR titles are "Company: Title" format
+    if not company and ": " in title:
+        company, title = title.split(": ", 1)
+        company = company.strip()
+        title = title.strip()
+
+    if not company:
+        company = "Unknown"
+
+    location = raw.get("location", raw.get("candidate_required_location",
+                raw.get("region", "Worldwide")))
+    if not location:
+        location = "Worldwide"
+
+    raw_desc = raw.get("description", "")
+    import html as html_mod
+    raw_desc = html_mod.unescape(raw_desc)
+    description = _sanitize_html(raw_desc)
+    desc_plain = _strip_html(raw_desc)
+
+    url = raw.get("url", raw.get("link", ""))
+
+    posted_at = raw.get("posted_at", raw.get("date", raw.get("publication_date", raw.get("pubDate", ""))))
+    if posted_at:
+        # Handle various date formats
+        posted_at = posted_at[:19]
+
+    tags = raw.get("tags", [])
+    department = tags[0] if tags and isinstance(tags[0], str) else ""
+
+    return {
+        "source": board_slug,  # remoteok, remotive, or weworkremotely
+        "source_id": source_id,
+        "board_slug": board_slug,
+        "listing_type": "job",
+        "title_display": title,
+        "company_display": company,
+        "location_display": location,
+        "title_normalized": normalize_title(title),
+        "company_normalized": normalize_company(company),
+        "description": description,
+        "url": url,
+        "posted_at": posted_at,
+        "department": department,
+        "is_remote": 1,  # remote by definition on these feeds
+        "remote_confidence": 1.0,
+        "description_quality": classify_description(desc_plain, title),
+    }
+
+
 PARSERS = {
     "greenhouse": _parse_greenhouse,
     "lever": _parse_lever,
@@ -443,6 +513,9 @@ PARSERS = {
     "usajobs": _parse_usajobs,
     "ashby": _parse_ashby,
     "recruitee": _parse_recruitee,
+    "remoteok": _parse_remote_feed,
+    "remotive": _parse_remote_feed,
+    "weworkremotely": _parse_remote_feed,
 }
 
 

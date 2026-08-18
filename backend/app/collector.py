@@ -8,6 +8,7 @@ import logging
 from .adapters import greenhouse, lever, ashby, recruitee
 from .adapters import adzuna as adzuna_adapter
 from .adapters import usajobs as usajobs_adapter
+from .adapters import remote_feeds
 from .models import ATSPlatform, FetchOutcome, FetchResult
 from .repository import get_active_companies
 
@@ -48,20 +49,39 @@ def fetch_all(include_aggregators: bool = True) -> list[FetchResult]:
         result = adapter(entry.company, entry.board_slug)
         results.append(result)
 
-    # Aggregators
+    # Aggregators — target MN-area roles from employers NOT in the registry.
+    # ATS boards already cover registry companies with better data.
+    # Adzuna's value is the Workday/iCIMS companies unreachable via ATS APIs.
     if include_aggregators:
-        logger.info("Fetching Adzuna...")
-        results.append(adzuna_adapter.fetch(
-            keywords=["software engineer", "developer"],
-            location="Minnesota",
-            pages=1,
-        ))
-        logger.info("Fetching USAJobs...")
-        results.append(usajobs_adapter.fetch(
-            keywords=["information technology", "software"],
-            location="Minnesota",
-            pages=1,
-        ))
+        adzuna_searches = [
+            ["software engineer"],
+            ["web developer"],
+            ["full stack"],
+            ["devops engineer"],
+        ]
+        for keywords in adzuna_searches:
+            logger.info("Fetching Adzuna: %s...", " ".join(keywords))
+            results.append(adzuna_adapter.fetch(
+                keywords=keywords,
+                location="Minnesota",
+                pages=1,
+                results_per_page=50,
+            ))
+
+        usajobs_searches = [
+            ["information technology"],
+            ["software developer"],
+        ]
+        for keywords in usajobs_searches:
+            logger.info("Fetching USAJobs: %s...", " ".join(keywords))
+            results.append(usajobs_adapter.fetch(
+                keywords=keywords,
+                location="Minnesota",
+                pages=1,
+            ))
+
+        # Remote feeds
+        results.extend(remote_feeds.fetch_all_feeds())
 
     return results
 

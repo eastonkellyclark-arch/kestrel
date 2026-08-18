@@ -133,6 +133,10 @@ function App() {
           {state.data.count} listings &middot; Updated{' '}
           {new Date(state.data.exported_at).toLocaleDateString()}
         </p>
+        <p className="attribution">
+          Remote listings powered by{' '}
+          <a href="https://weworkremotely.com" target="_blank" rel="noopener noreferrer">We Work Remotely</a>
+        </p>
       </footer>
     </div>
   );
