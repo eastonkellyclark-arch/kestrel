@@ -1,121 +1,17 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 47 entries
-
-Score: 0.810
-  A: [Airtable] Senior Solutions Architect @ Remote - US
-  B: [Airtable] Senior Solutions Architect- West Coast @ Anywhere in the World
+# 8 entries
 
 Score: 0.807
   A: [Gusto, Inc.] Retirement Implementation Specialist (Conversion Plans) @ Denver, CO - Hybrid
   B: [Gusto, Inc.] Retirement Implementation Specialist @ Anywhere in the World
 
-Score: 0.793
-  A: [Airtable] Senior Solutions Architect- West Coast @ Remote-US
-  B: [Airtable] Senior Solutions Architect @ Anywhere in the World
-
 Score: 0.773
   A: [Gusto, Inc.] Enterprise Application AI Engineer @ San Francisco, CA - Hybrid
   B: [Gusto, Inc.] Enterprise Application AI Architect @ Anywhere in the World
 
-Score: 0.770
-  A: [Gusto, Inc.] Staff Software Engineer, HR Experiences @ New York, NY
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.765
-  A: [Gusto, Inc.] Staff Software Engineer, Developer Productivity Async @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.764
-  A: [Gusto, Inc.] Staff Software Engineer, Tax Experiences @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.757
-  A: [Gusto, Inc.] Staff Software Engineer, PEO Benefits @ Denver, CO;San Francisco, CA;New York, NY
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.751
-  A: [Gusto, Inc.] Staff Software Engineer, Core AI Platforms @ San Francisco, CA - Hybrid; Denver, CO - Hybrid; New York, NY - Hybrid
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.739
-  A: [Gusto, Inc.] Staff Software Engineer, Core Products @ New York, New York, United States; San Francisco, CA - Hybrid
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.735
-  A: [Cloudflare] Principal Partner Account Manager - Service Provider, APAC (Based in Singapore) @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
-Score: 0.732
-  A: [Gusto, Inc.] Senior Staff Software Engineer, Money Group @ Denver, CO;San Francisco, CA;New York, NY
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.731
-  A: [Airtable] Senior Delivery Consultant- West Coast @ San Francisco, CA; Austin, TX; Remote - US
-  B: [Airtable] Senior Solutions Architect- West Coast @ Anywhere in the World
-
-Score: 0.728
-  A: [Gusto, Inc.] Staff Software Engineer, Tax Accounts @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.728
-  A: [Gusto, Inc.] Staff Software Engineer, Retirement AI @ Denver, CO;San Francisco, CA;New York, NY
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.722
-  A: [Gusto, Inc.] Staff Software Engineer, Growth (Revenue Enablement) @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.712
-  A: [Gusto, Inc.] Senior Staff Software Engineer, iOS Platform @ Denver, CO;San Francisco, CA;New York, NY;Seattle, WA
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.697
-  A: [Cloudflare] Senior Solutions Engineer - Madrid based @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
-Score: 0.696
-  A: [Gusto, Inc.] Staff Software Engineer, Gustie Assist @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.692
-  A: [Gusto, Inc.] Senior Software Engineer, Risk @ San Francisco, CA - Hybrid
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.689
-  A: [Cloudflare] Senior Partner Account Manager, Japan (Based in Tokyo) @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
-Score: 0.686
-  A: [Gusto, Inc.] Staff Software Engineer, Business Money @ San Francisco, CA;New York, NY;Ontario, CAN - Remote;Toronto, Ontario, CAN - Remote;United States - Remote
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.682
-  A: [Gusto, Inc.] Senior Staff Software Engineer, Growth Onboarding @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.681
-  A: [Gusto, Inc.] Staff Software Engineer, Business Insurance @ New York, New York, United States
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.679
-  A: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ New York, NY;Toronto, Ontario, CAN - Remote
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
 Score: 0.677
   A: [Lemon.io] Senior Data Engineer @ Worldwide
   B: [Lemon.io] Senior Graphic Designer @ Americas, Europe, Asia, Africa, Oceania
-
-Score: 0.675
-  A: [Cloudflare] Principal Software Engineer, Data @ Austin, TX, United States
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
-Score: 0.675
-  A: [Gusto, Inc.] Software Engineer, ML Platform @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.675
-  A: [Cloudflare] Customer Engineer, India (Based in Mumbai) @ Remote India
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
 
 Score: 0.674
   A: [Gusto, Inc.] People Partner Lead, Engineering @ Denver, CO;San Francisco, CA
@@ -129,61 +25,9 @@ Score: 0.669
   A: [Gusto, Inc.] ERP Applications Analyst - Order to Cash @ San Francisco, CA
   B: [Gusto, Inc.] Enterprise Application AI Architect @ Anywhere in the World
 
-Score: 0.669
-  A: [Gusto, Inc.] Senior Staff Software Engineer - Pricing and Packaging @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.662
-  A: [Cloudflare] Principal Software Engineer: Distributed Systems (Config, Test, & Deployment) @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
 Score: 0.661
   A: [Unknown] [Hiring] Someone to find clips of twitch streams @ 
   B: [Unknown] Why do people want to get rid of the skyway? @ 
-
-Score: 0.659
-  A: [Cloudflare] Solutions Engineer, Benelux @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
-Score: 0.659
-  A: [Cloudflare] Digital Communications Director @ Hybrid
-  B: [Cloudflare] Country Director, India @ Anywhere in the World
-
-Score: 0.655
-  A: [Cloudflare] Account Executive, FedCiv @ Hybrid
-  B: [Cloudflare] Country Director, India @ Anywhere in the World
-
-Score: 0.655
-  A: [Cloudflare] Principal Systems Engineer, DevTools @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
-Score: 0.654
-  A: [Gusto, Inc.] Staff Software Engineer, Pricing and Packaging Engineering @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.653
-  A: [Cloudflare] Senior Director, Executive Communications @ Hybrid
-  B: [Cloudflare] Country Director, India @ Anywhere in the World
-
-Score: 0.652
-  A: [Cloudflare] Principal Professional Services Engineer @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
-Score: 0.652
-  A: [Airtable] Senior Delivery Consultant @ New York, NY; Remote - US
-  B: [Airtable] Senior Solutions Architect @ Anywhere in the World
-
-Score: 0.651
-  A: [Cloudflare] Customer Engineer (Pre-Sales), Korea (Based in Seoul) @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
-
-Score: 0.651
-  A: [Gusto, Inc.] Principal Software Engineer - Pay Group Engineering @ Denver, CO;San Francisco, CA;New York, NY
-  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.651
-  A: [Cloudflare] Presales Customer Engineer, Enterprise (based in Melbourne) @ Hybrid
-  B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
 
 Score: 0.650
   A: [Unknown] [Hiring] Export Coordinator - Neenah, WI @ 
