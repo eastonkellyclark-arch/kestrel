@@ -35,11 +35,39 @@ FEEDS = {
 }
 
 
+def _is_spam(title: str, location: str) -> str | None:
+    """Return rejection reason if a listing is spam/garbage, None if OK."""
+    t = title.strip().lower()
+    # Too short to be a real job title
+    if len(t.split()) < 3:
+        return f"title too short: '{title}'"
+    # Job seeker posts, not job listings
+    spam_phrases = ["seeking a job", "looking for", "available for", "hire me",
+                    "need a job", "want a job", "seeking work", "open to work"]
+    for phrase in spam_phrases:
+        if phrase in t:
+            return f"spam phrase '{phrase}' in title"
+    # Mangled locations (encoding errors, random text)
+    if location:
+        loc = location.strip()
+        # Check for mojibake (garbled unicode)
+        if any(c in loc for c in "â€™ã¢â"):
+            return f"mangled location: '{loc[:40]}'"
+    return None
+
+
 def _parse_remoteok_jobs(data: list) -> list[dict]:
-    """Extract jobs from RemoteOK JSON response."""
+    """Extract jobs from RemoteOK JSON response. Filters spam."""
     jobs = []
+    dropped = []
     for item in data:
         if not isinstance(item, dict) or not item.get("position"):
+            continue
+        title = item.get("position", "")
+        location = item.get("location", "")
+        reason = _is_spam(title, location)
+        if reason:
+            dropped.append((title, reason))
             continue
         jobs.append({
             "source_id": str(item.get("id", "")),
@@ -54,6 +82,10 @@ def _parse_remoteok_jobs(data: list) -> list[dict]:
             "salary_max": item.get("salary_max"),
             "raw": item,
         })
+    if dropped:
+        logger.info("RemoteOK: dropped %d spam listings", len(dropped))
+        for title, reason in dropped:
+            logger.debug("  DROPPED: %s — %s", title, reason)
     return jobs
 
 

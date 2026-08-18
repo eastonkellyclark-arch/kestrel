@@ -1,18 +1,28 @@
-"""Remote work detection heuristic.
+"""Remote work detection.
 
-This is a known-hard problem (CLAUDE.md). No source reliably flags remote.
-The heuristic scores signals from location, title, and description text.
+Two paths:
+1. Source-based: feeds from remote-only platforms (RemoteOK, Remotive, WWR)
+   are remote by definition. No heuristic needed.
+2. Heuristic: for ATS boards and aggregators where remote status is ambiguous.
+   Scores signals from location, title, description, and Lever workplaceType.
 
-Returns (is_remote: bool, confidence: float) where confidence is 0.0–1.0.
+The heuristic ONLY works when the location field explicitly says "Remote" or
+"Distributed". It fails on:
+  - City names without "Remote" keyword (RemoteOK, Remotive location fields)
+  - Region lists ("Americas, Europe, Asia")
+  - Gmail alert locations where a remote role shows "Minneapolis, MN"
+These cases need source-based rules or are open problems (Phase 10 Gmail).
 
 Confidence thresholds:
   >= 0.7  → classified remote
   <  0.7  → classified not remote
-
-Signals are additive (positive evidence) and subtractive (counter-evidence).
 """
 
 import re
+
+# Sources where every listing is remote by definition.
+# Check this BEFORE running the heuristic.
+REMOTE_BY_SOURCE = {"remoteok", "remotive", "weworkremotely"}
 
 # --- Positive signals (evidence of remote) ---
 
@@ -75,8 +85,13 @@ def detect_remote(
     title: str = "",
     description: str = "",
     workplace_type: str = "",
+    source: str = "",
 ) -> tuple[bool, float]:
     """Return (is_remote, confidence) based on available signals."""
+    # Rule 1: source-based. Feeds from remote-only platforms are remote
+    # by definition — no heuristic needed.
+    if source in REMOTE_BY_SOURCE:
+        return True, 1.0
     score = 0.0
     location_says_remote = False
 

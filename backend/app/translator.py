@@ -486,8 +486,14 @@ def _parse_remote_feed(raw: dict, board_slug: str) -> dict | None:
     tags = raw.get("tags", [])
     department = tags[0] if tags and isinstance(tags[0], str) else ""
 
+    # Remote detection uses the explicit source-based rule (REMOTE_BY_SOURCE)
+    is_remote, remote_conf = detect_remote(
+        location=location, title=title, description=desc_plain,
+        source=board_slug,
+    )
+
     return {
-        "source": board_slug,  # remoteok, remotive, or weworkremotely
+        "source": board_slug,
         "source_id": source_id,
         "board_slug": board_slug,
         "listing_type": "job",
@@ -500,8 +506,8 @@ def _parse_remote_feed(raw: dict, board_slug: str) -> dict | None:
         "url": url,
         "posted_at": posted_at,
         "department": department,
-        "is_remote": 1,  # remote by definition on these feeds
-        "remote_confidence": 1.0,
+        "is_remote": int(is_remote),
+        "remote_confidence": remote_conf,
         "description_quality": classify_description(desc_plain, title),
     }
 

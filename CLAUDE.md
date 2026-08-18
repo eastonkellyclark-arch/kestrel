@@ -205,9 +205,16 @@ priority and the first thing to cut.
 - Onsite radius: 80 km — covers the Twin Cities metro
 - Remote: accepted anywhere in the US
 - Qualifies if within radius **or** US-remote
-- **Remote detection is a known-hard problem.** No source reliably flags it;
-  location strings lie both ways. Needs a real heuristic over title and
-  description text, validated against actual listings.
+- **Remote detection is a known-hard problem.**
+  - **Solved for ATS boards:** the heuristic works when the location field
+    explicitly says "Remote" or "Distributed" (validated at 15/15 on ATS data).
+  - **Solved for remote feeds:** RemoteOK, Remotive, WWR are remote by
+    definition — explicit source-based rule in `REMOTE_BY_SOURCE`, no heuristic.
+  - **NOT solved for Gmail alerts (Phase 10):** LinkedIn/Indeed alert emails
+    show city locations ("Minneapolis, MN") on fully-remote roles. The heuristic
+    produces ~0% accuracy on these because there's no "Remote" keyword. This is
+    an open problem, not a handled one.
+  - **NOT solved for Adzuna:** location field is city-based, same gap as Gmail.
 
 ---
 
