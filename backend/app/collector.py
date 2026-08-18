@@ -9,6 +9,7 @@ from .adapters import greenhouse, lever, ashby, recruitee
 from .adapters import adzuna as adzuna_adapter
 from .adapters import usajobs as usajobs_adapter
 from .adapters import remote_feeds
+from .adapters import gmail_alerts
 from .models import ATSPlatform, FetchOutcome, FetchResult
 from .repository import get_active_companies
 
@@ -82,6 +83,14 @@ def fetch_all(include_aggregators: bool = True) -> list[FetchResult]:
 
         # Remote feeds
         results.extend(remote_feeds.fetch_all_feeds())
+
+        # Gmail alerts (requires credentials)
+        creds = settings.gmail_credentials_json
+        token = settings.gmail_token_json
+        if creds:
+            token_path = token or str(settings.data_dir / "gmail_token.json")
+            logger.info("Fetching Gmail alerts...")
+            results.extend(gmail_alerts.fetch_alerts(creds, token_path))
 
     return results
 

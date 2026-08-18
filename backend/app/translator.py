@@ -512,6 +512,59 @@ def _parse_remote_feed(raw: dict, board_slug: str) -> dict | None:
     }
 
 
+def _parse_gmail_alert(raw: dict, board_slug: str) -> dict | None:
+    """Parse a Gmail alert job record.
+
+    Alert emails have: title, company, location, url (unwrapped), source_id.
+    No full description — just what was in the email.
+
+    Remote detection: mark as ambiguous (confidence 0.3) rather than
+    confidently wrong. Gmail locations like "Minneapolis, MN" could be
+    remote or onsite — we don't know. If the same listing appears from an
+    ATS board (via dedupe), the ATS version's remote status takes precedence.
+    """
+    source_id = str(raw.get("source_id", ""))
+    if not source_id:
+        return None
+
+    title = raw.get("title", "").strip()
+    if not title:
+        return None
+
+    company = raw.get("company", "").strip() or "Unknown"
+    location = raw.get("location", "").strip()
+    url = raw.get("url", "")
+
+    # Remote detection: try the heuristic, but if it says "not remote"
+    # and there's no strong negative signal, mark as ambiguous rather
+    # than confident. Gmail locations are unreliable for remote status.
+    is_remote, remote_conf = detect_remote(
+        location=location, title=title, description="",
+    )
+    if not is_remote:
+        # Default to ambiguous instead of confidently not-remote
+        remote_conf = max(remote_conf, 0.3)
+
+    return {
+        "source": "gmail_alert",
+        "source_id": source_id,
+        "board_slug": board_slug,  # sender name: linkedin, indeed, etc.
+        "listing_type": "job",
+        "title_display": title,
+        "company_display": company,
+        "location_display": location,
+        "title_normalized": normalize_title(title),
+        "company_normalized": normalize_company(company),
+        "description": "",  # alerts don't have full descriptions
+        "url": url,
+        "posted_at": "",
+        "department": "",
+        "is_remote": int(is_remote),
+        "remote_confidence": remote_conf,
+        "description_quality": "truncated",  # no full description available
+    }
+
+
 PARSERS = {
     "greenhouse": _parse_greenhouse,
     "lever": _parse_lever,
@@ -522,7 +575,39 @@ PARSERS = {
     "remoteok": _parse_remote_feed,
     "remotive": _parse_remote_feed,
     "weworkremotely": _parse_remote_feed,
+    "gmail_alert": _parse_gmail_alert,
 }
+
+
+def _load_quality_gate() -> dict:
+    """Load quality gate config from YAML."""
+    from pathlib import Path
+    gate_path = Path(__file__).resolve().parent.parent.parent / "config" / "quality_gate.yaml"
+    if gate_path.exists():
+        import yaml
+        with open(gate_path, encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    return {}
+
+
+def _check_quality_gate(record: dict, gate: dict) -> str | None:
+    """Check if a parsed record should be filtered. Returns reason or None."""
+    source = record.get("source", "")
+    gated_sources = gate.get("gated_sources", [])
+    if source not in gated_sources:
+        return None
+
+    title = record.get("title_display", "").strip()
+    min_words = gate.get("min_title_words", 3)
+    if len(title.split()) < min_words:
+        return f"title too short ({len(title.split())} words): '{title}'"
+
+    title_lower = title.lower()
+    for phrase in gate.get("spam_phrases", []):
+        if phrase.lower() in title_lower:
+            return f"spam phrase '{phrase}' in title"
+
+    return None
 
 
 def translate_all() -> dict:
@@ -542,9 +627,11 @@ def translate_all() -> dict:
     ).fetchall()
     conn.close()
 
-    stats = {"total": len(raw_rows), "translated": 0, "skipped": 0, "errors": 0}
+    gate = _load_quality_gate()
+    stats = {"total": len(raw_rows), "translated": 0, "skipped": 0, "errors": 0, "filtered": 0}
     now = datetime.utcnow().isoformat()[:19]
     parsed_listings = []
+    filtered_log: list[tuple[str, str]] = []
 
     for row in raw_rows:
         source = row["source"]
@@ -564,6 +651,14 @@ def translate_all() -> dict:
         if not record:
             stats["skipped"] += 1
             continue
+
+        # Quality gate: check at translate time, not ingestion.
+        # Raw vault keeps everything; filtered listings get description_quality="filtered".
+        gate_reason = _check_quality_gate(record, gate)
+        if gate_reason:
+            record["description_quality"] = "filtered"
+            stats["filtered"] += 1
+            filtered_log.append((record.get("title_display", ""), gate_reason))
 
         # Resolve company name from registry for platforms that don't
         # include it in the posting data (Lever, Ashby)
@@ -632,8 +727,12 @@ def translate_all() -> dict:
 
     stats["translated"] = inserted
     stats["updated"] = updated
+    if filtered_log:
+        logger.info("Quality gate filtered %d listings:", len(filtered_log))
+        for title, reason in filtered_log:
+            logger.info("  FILTERED: %s — %s", title, reason)
     logger.info(
-        "Translated %d new, updated %d existing of %d raw listings (%d skipped, %d errors)",
-        inserted, updated, stats["total"], stats["skipped"], stats["errors"],
+        "Translated %d new, updated %d existing of %d raw (%d skipped, %d filtered, %d errors)",
+        inserted, updated, stats["total"], stats["skipped"], stats["filtered"], stats["errors"],
     )
     return stats

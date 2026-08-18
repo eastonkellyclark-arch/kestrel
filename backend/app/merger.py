@@ -159,13 +159,27 @@ def merge_all(near_miss_file: str | None = None) -> dict:
                     )
                     near_misses.append(near_miss)
 
-    # Apply matches — mark duplicates
+    # Apply matches — mark duplicates and inherit remote status
     conn = get_connection()
     for m in matches:
         conn.execute(
             "UPDATE listings SET canonical_id = ?, dedupe_score = ? WHERE id = ? AND canonical_id IS NULL",
             (m.canonical_id, m.score, m.listing_id),
         )
+
+    # Cross-reference: when a gmail_alert/adzuna listing is linked to an ATS
+    # canonical, inherit the ATS version's remote status (it has structured data).
+    conn.execute(
+        """
+        UPDATE listings SET
+            is_remote = (SELECT c.is_remote FROM listings c WHERE c.id = listings.canonical_id),
+            remote_confidence = (SELECT c.remote_confidence FROM listings c WHERE c.id = listings.canonical_id)
+        WHERE canonical_id IS NOT NULL
+          AND source IN ('gmail_alert', 'adzuna')
+          AND (SELECT c.source FROM listings c WHERE c.id = listings.canonical_id)
+              IN ('greenhouse', 'lever', 'ashby', 'recruitee')
+        """
+    )
     conn.commit()
     conn.close()
 

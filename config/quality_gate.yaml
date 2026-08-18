@@ -1,0 +1,24 @@
+# Kestrel — Quality gate config
+# Applied at translate time, not ingestion. Raw vault keeps everything.
+
+# Minimum word count in title. Listings below this become "filtered" quality.
+min_title_words: 3
+
+# Title phrases that indicate spam (job seeker posts, test data).
+# Case-insensitive substring match.
+spam_phrases:
+  - seeking a job
+  - looking for
+  - available for
+  - hire me
+  - need a job
+  - want a job
+  - seeking work
+  - open to work
+  - test job
+  - test req
+
+# Sources where the quality gate is applied.
+# ATS boards have structured data and don't need it.
+gated_sources:
+  - remoteok
