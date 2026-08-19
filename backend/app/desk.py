@@ -25,7 +25,7 @@ logger = logging.getLogger("kestrel.desk")
 
 router = APIRouter(prefix="/desk")
 
-VALID_STATUSES = {"new", "interested", "applied", "responded", "interview", "closed"}
+VALID_STATUSES = {"new", "interested", "applied", "responded", "interview", "closed", "reviewed_skipped"}
 
 
 # ── Models ───────────────────────────────────────────────────────────
@@ -58,6 +58,89 @@ def adzuna_budget():
     """Current Adzuna API call budget status."""
     from .adapters.adzuna import get_budget_status
     return get_budget_status()
+
+
+# ── Apply Queue ──────────────────────────────────────────────────────
+
+@router.get("/apply-queue")
+def apply_queue(limit: int = Query(10, ge=1, le=50)):
+    """Get the top-scoring listings ready for application.
+
+    Returns listings that are 'new' or 'interested' (not yet applied/skipped),
+    with matched skills, requirements checklist, and recommended resume.
+    """
+    from .scoring.judge import load_active_profile, _load_profile_yaml
+    from .requirements_parser import extract_requirements
+    from .scoring.skill_match import _find_skills
+
+    active_name, profile, weights = load_active_profile()
+    contact = profile.get("contact", {})
+    synonyms = profile.get("skills", {}).get("synonyms", {})
+    primary = profile.get("skills", {}).get("primary", [])
+    secondary = profile.get("skills", {}).get("secondary", [])
+
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT id, title_display, company_display, location_display,
+               description, url, score, is_remote, experience_required,
+               degree_hard_required, score_breakdown, description_quality
+        FROM listings
+        WHERE canonical_id IS NULL AND score IS NOT NULL
+              AND status IN ('new', 'interested')
+              AND listing_type = 'job'
+        ORDER BY score DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+
+    # Get most recent resume for active profile
+    resume_row = conn.execute(
+        "SELECT id, label, filename FROM resumes WHERE profile_name = ? ORDER BY created_at DESC LIMIT 1",
+        (active_name,),
+    ).fetchone()
+    conn.close()
+
+    queue = []
+    for row in rows:
+        desc = row["description"] or ""
+        desc_plain = re.sub(r"<[^>]+>", " ", desc)
+
+        # Matched skills for this listing
+        matched_primary = _find_skills(f"{row['title_display']} {desc_plain}", primary, synonyms)
+        matched_secondary = _find_skills(f"{row['title_display']} {desc_plain}", secondary, synonyms)
+
+        # Requirements checklist
+        reqs = extract_requirements(desc)
+
+        # Breakdown
+        breakdown = json.loads(row["score_breakdown"]) if row["score_breakdown"] else {}
+
+        queue.append({
+            "id": row["id"],
+            "title": row["title_display"],
+            "company": row["company_display"],
+            "location": row["location_display"],
+            "url": row["url"],
+            "score": row["score"],
+            "is_remote": bool(row["is_remote"]),
+            "experience_required": row["experience_required"],
+            "degree_hard_required": bool(row["degree_hard_required"]),
+            "matched_skills": {
+                "primary": matched_primary,
+                "secondary": matched_secondary,
+            },
+            "requirements": reqs,
+            "scale_label": breakdown.get("scale_label", ""),
+        })
+
+    return {
+        "profile": active_name,
+        "contact": contact,
+        "recommended_resume": dict(resume_row) if resume_row else None,
+        "listings": queue,
+    }
 
 
 # ── Profiles ─────────────────────────────────────────────────────────

@@ -87,6 +87,7 @@ textarea{width:100%;resize:vertical;min-height:60px}
 
 <div class="tabs">
   <div class="tab active" onclick="showTab('tracker')">Tracker</div>
+  <div class="tab" onclick="showTab('apply')">Apply Queue</div>
   <div class="tab" onclick="showTab('registry')">Registry</div>
   <div class="tab" onclick="showTab('sniffer')">Sniffer</div>
   <div class="tab" onclick="showTab('resumes')">Resumes</div>
@@ -114,6 +115,11 @@ textarea{width:100%;resize:vertical;min-height:60px}
 <thead><tr><th>Company</th><th>Platform</th><th>Slug</th><th>Active</th><th></th></tr></thead>
 <tbody id="registry-rows"></tbody>
 </table>
+</div>
+
+<!-- Apply Queue Tab -->
+<div id="tab-apply" style="display:none">
+<div id="apply-queue-content"></div>
 </div>
 
 <!-- Resumes Tab -->
@@ -177,6 +183,7 @@ function showTab(name) {
   document.getElementById('tab-' + name).style.display = 'block';
   event.target.classList.add('active');
   if (name === 'registry') loadRegistry();
+  if (name === 'apply') loadApplyQueue();
   if (name === 'resumes') { loadResumes(); loadPortfolioLinks(); }
 }
 
@@ -452,6 +459,108 @@ async function addPortfolio() {
 async function deletePortfolio(id) {
   await fetch(API + `/desk/portfolio-links/${id}`, { method: 'DELETE' });
   flash('Deleted'); loadPortfolioLinks();
+}
+
+// Apply Queue
+let applyQueueData = null;
+let applyIndex = 0;
+
+async function loadApplyQueue() {
+  const r = await fetch(API + '/desk/apply-queue?limit=20');
+  applyQueueData = await r.json();
+  applyIndex = 0;
+  renderApplyItem();
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text);
+  flash('Copied');
+}
+
+function renderApplyItem() {
+  const el = document.getElementById('apply-queue-content');
+  if (!applyQueueData || applyQueueData.listings.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-dim)"><h2>No listings to apply to</h2><p>Mark listings as "interested" first, or lower your min score.</p></div>';
+    return;
+  }
+  if (applyIndex >= applyQueueData.listings.length) {
+    el.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-dim)"><h2>Queue complete</h2><p>All listings reviewed.</p></div>';
+    return;
+  }
+
+  const l = applyQueueData.listings[applyIndex];
+  const c = applyQueueData.contact || {};
+  const resume = applyQueueData.recommended_resume;
+  const total = applyQueueData.listings.length;
+  const skills = [...(l.matched_skills?.primary || []), ...(l.matched_skills?.secondary || [])];
+
+  let contactHtml = '';
+  for (const [k, v] of Object.entries(c)) {
+    if (v) contactHtml += `<div class="inline-form"><span style="width:80px;color:var(--text-dim);font-size:0.75rem">${k}:</span><span style="flex:1;font-size:0.82rem">${v}</span><button class="secondary" onclick="copyText('${v.replace(/'/g, "\\'")}')" style="font-size:0.7rem">Copy</button></div>`;
+  }
+
+  let reqsHtml = l.requirements.map(r =>
+    `<li style="margin:0.2rem 0;font-size:0.8rem;color:var(--text-muted)">${r}</li>`
+  ).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h2 style="margin:0">${applyIndex + 1} of ${total}</h2>
+      <div style="display:flex;gap:0.5rem">
+        <button class="secondary" onclick="skipApply(${l.id})">Skip</button>
+        <button onclick="confirmApply(${l.id})">Applied \\u2713</button>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:1rem">
+      <div style="display:flex;gap:1rem;align-items:flex-start">
+        <div class="score-badge ${l.score >= 50 ? 'high' : l.score >= 30 ? 'mid' : 'low'}" style="width:48px;height:48px;font-size:0.9rem;flex-shrink:0">${l.score?.toFixed(0) || '--'}</div>
+        <div>
+          <div style="font-size:1.1rem;font-weight:600">${l.title}</div>
+          <div style="color:var(--text-muted)">${l.company}</div>
+          <div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.25rem">${l.location || ''}${l.is_remote ? ' <span class="tag remote">Remote</span>' : ''}${l.experience_required != null ? ` <span class="tag exp">${l.experience_required}+ yrs</span>` : ''}${l.degree_hard_required ? ' <span class="tag" style="background:rgba(248,113,113,0.1);color:var(--red)">Degree req.</span>' : ''}</div>
+        </div>
+      </div>
+      <a href="${l.url || '#'}" target="_blank" rel="noopener" style="display:inline-block;margin-top:0.75rem;padding:0.4rem 0.75rem;background:var(--accent);color:#0c0e14;border-radius:4px;font-weight:600;font-size:0.82rem;text-decoration:none">Open apply page \\u2192</a>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="panel">
+        <h3 style="font-size:0.85rem;margin-bottom:0.5rem">Matched Skills</h3>
+        ${skills.length > 0
+          ? skills.map(s => `<span class="tag remote" style="margin:0.15rem">${s}</span>`).join('')
+          : '<span style="color:var(--text-dim);font-size:0.8rem">No matched skills</span>'}
+        <div style="margin-top:0.5rem;font-size:0.72rem;color:var(--text-dim);font-style:italic">${l.scale_label || ''}</div>
+      </div>
+      <div class="panel">
+        <h3 style="font-size:0.85rem;margin-bottom:0.5rem">Contact Info</h3>
+        ${contactHtml || '<span style="color:var(--text-dim);font-size:0.8rem">Set contact in profile YAML</span>'}
+        ${resume ? `<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted)">Resume: <strong>${resume.label}</strong> <a href="${API}/desk/resumes/${resume.id}/download" target="_blank" style="color:var(--accent)">download</a></div>` : ''}
+      </div>
+    </div>
+    ${reqsHtml ? `<div class="panel" style="margin-top:1rem"><h3 style="font-size:0.85rem;margin-bottom:0.5rem">Requirements Checklist</h3><ul style="padding-left:1.2rem;margin:0">${reqsHtml}</ul></div>` : ''}
+  `;
+}
+
+async function confirmApply(id) {
+  const resume_id = applyQueueData.recommended_resume?.id || null;
+  await fetch(API + '/desk/listings/' + id + '/status', {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status: 'applied', resume_id})
+  });
+  flash('Marked applied');
+  applyIndex++;
+  renderApplyItem();
+  loadPipeline();
+}
+
+async function skipApply(id) {
+  await fetch(API + '/desk/listings/' + id + '/status', {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status: 'reviewed_skipped'})
+  });
+  flash('Skipped');
+  applyIndex++;
+  renderApplyItem();
+  loadPipeline();
 }
 
 // Init

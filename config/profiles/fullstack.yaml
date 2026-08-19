@@ -82,6 +82,15 @@ seniority:
     - entry level
     - entry-level
 
+# Contact info — copy buttons in the apply queue
+contact:
+  name: "Easton Clark"
+  email: "Eastonkellyclark@gmail.com"
+  phone: ""
+  linkedin: ""
+  github: "https://github.com/eastonkellyclark-arch"
+  portfolio: "https://adlaunch.studio"
+
 dealbreakers:
   - security clearance
   - top secret

@@ -29,24 +29,23 @@ Two surfaces, one codebase:
 
 | Surface | Path | Access | Contents |
 |---|---|---|---|
-| Showroom | `/` | Public | Ranked listings, filters, score breakdowns |
-| Desk | `/desk` | Cloudflare Access | Application history, notes, registry editor |
+| Showroom | `/` | Public | Ranked listings, filters, score breakdowns, interactive profile switcher |
+| Desk | `/desk` | Local only | Apply queue, tracker, registry, sniffer, resume management |
 
 **All showroom data is public information.** Job postings are public by
 definition. Nothing private is ever rendered on the public surface — not
 application status, not notes, not the profile.
 
-**Auth is never implemented in application code.** Cloudflare Access sits in
-front of `/desk` and handles identity at the edge. Free tier, up to 50 users.
-The app never sees a password, never stores a session, never implements a reset
-flow. If a task seems to require writing authentication code, stop and ask.
+**The desk runs locally** (`uvicorn`). There is no hosted backend — the
+showroom is a static export on Cloudflare Pages. Cloudflare Access setup
+deferred until a backend is deployed.
 
-**Build order:** local first, deployed continuously.
-- Phase 0 deploys an empty shell to the real domain. This proves DNS, HTTPS,
-  and the build pipeline before there is anything to break.
-- Development happens locally against SQLite.
-- The showroom is a static export refreshed by scheduled automation.
-- The desk runs locally, and later behind Access.
+**Auth is never implemented in application code.** If a task seems to require
+writing authentication code, stop and ask.
+
+**Automated pipeline:** GitHub Actions runs every 6 hours — fetch, translate,
+score, export, build, deploy to Cloudflare Pages. All credentials in Actions
+Secrets. Failure notifications on credential errors and stale deploys.
 
 ---
 
@@ -138,10 +137,14 @@ registry is core infrastructure.
 
 ### Tier 2 — Aggregator APIs
 - **Adzuna** — free tier ~1,000 calls/month (~33/day). Truncated descriptions,
-  often model-predicted salaries. **Budget these calls explicitly.** Supporting
-  source, never the backbone.
+  often model-predicted salaries. **Budget enforced in code** — daily call counter
+  in SQLite, refuses at cap. Queries target Minnesota-area roles from employers
+  not in the ATS registry (Workday/iCIMS companies). 4 calls/day.
 - **USAJobs** — free, structured, no real quota pressure. Federal hiring uses
   explicit qualification standards where experience substitutes for a degree.
+- **Freelancer.com** — public JSON API, no auth. Real web development gigs with
+  budgets and bid counts. Primary gig source. Competition scorer uses real bid
+  counts instead of freshness proxy.
 
 ### Tier 3 — Remote feeds
 RemoteOK (JSON + RSS), Remotive (API + RSS), We Work Remotely (RSS).
@@ -159,25 +162,25 @@ Kestrel reads the user's own mailbox and parses what arrives.
 - Expect title, company, location, link. Not full descriptions.
 
 ### Tier 5 — Gig sources
-- **Google Alerts → RSS** — the catch-all, and the highest-yield gig source.
-  Alerts set to "as-it-happens" can deliver to RSS. Any search phrase becomes a
-  feed: `"need a website" Minneapolis`, `"looking for a web designer" Twin
-  Cities`. Free, unlimited, no rate limit. **Expect heavy noise — the gig
-  scorer earns its keep here.**
-- **Reddit `.rss`** — `reddit.com/r/forhire/new.rss`. Do NOT use the OAuth API
-  or `.json` endpoints: unauthenticated `.json` returns 403 as of May 2026 and
-  OAuth approval is slow and unreliable. RSS is throttled to roughly 1 request
-  per minute per feed, which is fine at hourly polling. **Reddit has signalled
-  RSS may close next — treat this adapter as expendable and never load-bearing.**
-- **Craigslist via Open RSS** — `openrss.org/` prefixed to a search URL.
-  Computer gigs, creative gigs, small business ads.
-- **Hacker News "Freelancer? Seeking Freelancer?"** — monthly thread via the
-  Algolia API. Reuses the HN parser.
+- **Freelancer.com** — the primary gig source. Public JSON API, real budgets,
+  real bid counts. All listings are demand by definition (clients posting work).
+  Search queries configurable in `config/gig_feeds.yaml`.
+- **Google Alerts → RSS** — feed URLs in `config/gig_feeds.yaml`. Add/remove
+  without code changes. Awaiting user's feed URLs.
+- **Reddit `.rss`** — r/forhire, r/smallbusiness, local subreddits. Do NOT use
+  the OAuth API or `.json` endpoints. 5-second delay between feeds for rate
+  limiting. **Treat as expendable and never load-bearing.**
+  Demand/supply classifier filters [FOR HIRE] posts (competitors) from
+  [HIRING] posts (real gigs).
+- **Craigslist** — DISABLED. Native RSS returns 403, Open RSS proxy returns
+  503. Craigslist has blocked programmatic RSS access as of Aug 2026.
+- **HN Freelancer** — DISABLED. 15-33 comments/month, mostly SEEKING WORK.
+  Zero web dev demand. Not worth the complexity.
 - **SAM.gov** — free API key, federal contract opportunities. Optional.
 
-### Also in
-**HN "Who is Hiring"** — monthly thread, Algolia, free-text parsing. Lowest
-priority and the first thing to cut.
+### Upwork
+**Not usable.** All endpoints return ConnectError. Historical RSS feeds dead.
+API requires OAuth + approved app. Cannot be used without account automation.
 
 ---
 
@@ -225,44 +228,78 @@ Active profile set in `profiles.yaml`. Each profile has its own skills, experien
 level, seniority target, and weights. The skill multiplier is never loosened —
 separate profiles with separate skills are the answer for non-software roles.
 
-### Job track
+### Composite model
 
-| Dimension | Weight |
-|---|---|
-| Skill match | 35 |
-| Degree posture | 20 |
-| Freshness | 15 |
-| Location fit | 15 |
-| Seniority fit | 10 |
-| Source quality | 5 |
+Score = hygiene_score × skill_factor. Skill match is multiplicative, not
+additive — zero skill match collapses the score regardless of other dimensions.
+This prevents non-tech roles from outranking engineering roles.
 
-Source quality rewards direct-employer postings over agency reposts.
+Curve: `factor = floor + (1 - floor) * (skill_score / 100) ^ exponent`
+Tunable via weights YAML: `skill_floor` and `skill_exponent`.
+
+### Job track (fullstack profile)
+
+| Dimension | Weight | Notes |
+|---|---|---|
+| Degree posture | 15 | No degree > equivalent ok > hard requirement |
+| Freshness | 15 | |
+| Location fit | 15 | TC metro > US Remote > US not metro > non-US |
+| Experience fit | 12 | Extracted from description, scored against 1yr experience |
+| Seniority fit | 8 | Mid-senior accepted, staff/principal/director penalized |
+| Source quality | 5 | Direct employer > curated feed > aggregator |
+
+Experience extraction: parses "5+ years", "minimum 3 years", spelled-out
+"five years". NULL (not mentioned) scores 50 (neutral, not favorable).
 
 ### Gig track
 
 | Dimension | Weight |
 |---|---|
-| Deliverability | 35 |
 | Budget signal | 25 |
 | Freshness | 20 |
 | Locality | 10 |
 | Competition | 10 |
+| Source quality | 5 |
+
+Competition uses real bid counts from Freelancer.com when available,
+freshness as proxy for other sources.
+
+Demand/supply classifier at translate time filters competitor posts
+([FOR HIRE], "I am a developer") from real gigs ([HIRING], "need a website").
+Supply posts score 0 on skill match — visible but buried.
 
 **Every score carries its per-dimension breakdown**, returned by the API and
-shown in the UI. A ranking that can't be explained is not a portfolio feature.
+shown in the UI. The showroom's "Why this score?" section explains each
+dimension in plain English. A ranking that can't be explained is not a
+portfolio feature.
 
 Hard filters are few and separate from scoring: clearance required,
 commission-only. Agency listings are flagged and scored down, never excluded.
+
+### Quality gates
+
+Applied at translate time, not ingestion. Raw vault keeps everything.
+Config in `config/quality_gate.yaml`:
+- RemoteOK: min 3 words in title, spam phrase filter
+- HN: min 10 words in comment content
+- Filtered listings get `description_quality="filtered"`, still in DB.
 
 ---
 
 ## The Sniffer
 
 Takes a careers page URL, identifies the ATS, extracts the board slug.
+Three-pass detection: URL patterns → HTML body scan → API probe fallback
+(derives slug guesses from domain name and tries each ATS API directly).
 
-**On failure — iframe embeds, vanity domains, unknown platforms — fall back to
-asking the user for the slug and record it, logging the failure reason.** The
-registry keeps growing even when detection fails.
+API probe catches JS-rendered embeds: Cloudflare and Figma both detected
+via `cloudflare.com/careers/` → probe finds `greenhouse/cloudflare`.
+
+**On failure — Workday, iCIMS, unknown platforms — fall back to
+asking the user for the slug and record it, logging the failure reason.**
+
+Company registry lives in `config/registry.json` — committed, read by both
+local dev and CI. Desk UI writes to it so additions persist across environments.
 
 ---
 
@@ -271,13 +308,19 @@ registry keeps growing even when detection fails.
 - Do not write authentication code. Cloudflare Access handles it.
 - Do not render private data on the public surface.
 - Do not add an LLM call anywhere in the pipeline.
-- Do not build a résumé parser, cover letter generator, or auto-applier.
+- Do not automate form filling or submission on external sites. The apply
+  queue stages information — it does not inject, submit, or automate.
 - Do not automate a logged-in session on any platform, for any reason.
 - Do not add a paid source, even a cheap one, even on a trial.
 - Do not make Reddit load-bearing.
-- Do not start the gig track before the job track is working.
 - Do not commit a credential. Ever, even briefly.
 - Do not refactor toward microservices, Docker Compose, or Kubernetes.
+- Do not use silent fallbacks. If config is missing or malformed, fail
+  loudly with a clear message. Structural over policy.
+- Do not store data in fields meant for something else (e.g., bid count
+  in the department field). Add proper columns.
+- Do not loosen the skill multiplier to make non-software jobs rank.
+  Separate profiles with separate skills are the answer.
 
 If any of these seem genuinely necessary, say so in the session review and let
 the human decide. Do not just build it.

@@ -3,6 +3,14 @@
 Each phase has a **Done when** test. Do not start a phase until the previous
 one's test passes *when actually run*.
 
+**Status as of Aug 2026:**
+- Phases 0–9: Complete
+- Phase 10 (Gmail): Code complete, blocked on alert data accumulation
+- Phase 11 (Gig track): Complete (Freelancer.com, Reddit, demand/supply classifier)
+- Phase 12 (Automation): Complete (GitHub Actions, every 6h, Cloudflare deploy)
+- Phase 13 (HN Who is Hiring): Skipped (optional per spec)
+- Phase 14 (Outcome tracking): Not started (needs real application data)
+
 **Phases 0–6 produce a usable, deployed app.** Everything after adds coverage to
 something that already works.
 
