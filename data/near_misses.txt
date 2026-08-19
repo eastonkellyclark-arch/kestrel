@@ -1,5 +1,5 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 49 entries
+# 48 entries
 
 Score: 0.810
   A: [Airtable] Senior Solutions Architect @ Remote - US
@@ -133,10 +133,6 @@ Score: 0.669
   A: [Gusto, Inc.] Senior Staff Software Engineer - Pricing and Packaging @ San Francisco, CA
   B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
 
-Score: 0.667
-  A: [Unknown] I take your business and turn it into a MACHINE [For Hire] @ 
-  B: [Unknown] Is business management a worth while degree? @ 
-
 Score: 0.663
   A: [Cloudflare] Senior Solutions Engineer, Public Sector Federal @ Hybrid
   B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
@@ -149,6 +145,10 @@ Score: 0.662
   A: [Cloudflare] Principal Software Engineer: Distributed Systems (Config, Test, & Deployment) @ Hybrid
   B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
 
+Score: 0.660
+  A: [Gusto, Inc.] IT Controls Engineer, Enterprise Applications @ San Francisco, CA - Hybrid
+  B: [Gusto, Inc.] Enterprise Application AI Architect @ Anywhere in the World
+
 Score: 0.659
   A: [Cloudflare] Solutions Engineer, Benelux @ Hybrid
   B: [Cloudflare] Principal Partner Solutions Engineer, SAARC (Based in Bangalore) @ Anywhere in the World
@@ -156,10 +156,6 @@ Score: 0.659
 Score: 0.659
   A: [Cloudflare] Digital Communications Director @ Hybrid
   B: [Cloudflare] Country Director, India @ Anywhere in the World
-
-Score: 0.656
-  A: [Unknown] [FOR HIRE] I'm a Web Developer - WordPress, WooCommerce & Shopify - $20/hr @ 
-  B: [Unknown] Looking for advice on a self made e-commerce platform @ 
 
 Score: 0.655
   A: [Cloudflare] Account Executive, FedCiv @ Hybrid
