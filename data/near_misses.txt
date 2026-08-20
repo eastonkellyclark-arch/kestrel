@@ -1,5 +1,5 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 47 entries
+# 48 entries
 
 Score: 0.810
   A: [Airtable] Senior Solutions Architect @ Remote - US
@@ -80,6 +80,10 @@ Score: 0.696
 Score: 0.692
   A: [Gusto, Inc.] Senior Software Engineer, Risk @ San Francisco, CA - Hybrid
   B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
+
+Score: 0.690
+  A: [Gusto, Inc.] Participant Support Specialist @ Denver, CO - Hybrid
+  B: [Gusto, Inc.] Retirement Implementation Specialist @ Anywhere in the World
 
 Score: 0.689
   A: [Cloudflare] Senior Partner Account Manager, Japan (Based in Tokyo) @ Hybrid
