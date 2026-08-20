@@ -1,17 +1,17 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 48 entries
+# 47 entries
 
 Score: 0.810
   A: [Airtable] Senior Solutions Architect @ Remote - US
   B: [Airtable] Senior Solutions Architect- West Coast @ Anywhere in the World
 
-Score: 0.807
-  A: [Gusto, Inc.] Retirement Implementation Specialist (Conversion Plans) @ Denver, CO - Hybrid
-  B: [Gusto, Inc.] Retirement Implementation Specialist @ Anywhere in the World
-
 Score: 0.793
   A: [Airtable] Senior Solutions Architect- West Coast @ Remote-US
   B: [Airtable] Senior Solutions Architect @ Anywhere in the World
+
+Score: 0.779
+  A: [Gusto, Inc.] Retirement Implementation Specialist (Conversion Plans) @ Chicago, IL - Remote; Denver, CO - Hybrid
+  B: [Gusto, Inc.] Retirement Implementation Specialist @ Anywhere in the World
 
 Score: 0.773
   A: [Gusto, Inc.] Enterprise Application AI Engineer @ San Francisco, CA - Hybrid
@@ -124,10 +124,6 @@ Score: 0.674
 Score: 0.671
   A: [Gusto, Inc.] Platform Operations Specialist @ New York, New York, United States
   B: [Gusto, Inc.] Retirement Implementation Specialist @ Anywhere in the World
-
-Score: 0.669
-  A: [Gusto, Inc.] ERP Applications Analyst - Order to Cash @ San Francisco, CA
-  B: [Gusto, Inc.] Enterprise Application AI Architect @ Anywhere in the World
 
 Score: 0.669
   A: [Gusto, Inc.] Senior Staff Software Engineer - Pricing and Packaging @ San Francisco, CA
