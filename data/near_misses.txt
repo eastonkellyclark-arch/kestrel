@@ -1,5 +1,13 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 4 entries
+# 6 entries
+
+Score: 0.727
+  A: [Coinbase] Senior Software Engineer @ US, Minnesota, Ramsey County, Saint Paul
+  B: [Coinbase] Senior Software Engineer, Backend (Consumer - Risk) @ Anywhere in the World
+
+Score: 0.727
+  A: [Coinbase] Senior Software Engineer @ US, Minnesota, Ramsey County, Saint Paul
+  B: [Coinbase] Senior Software Engineer, Backend (Consumer - Risk) @ Anywhere in the World
 
 Score: 0.706
   A: [Coinbase] Senior Software Engineer @ US, Minnesota, Ramsey County, Saint Paul
