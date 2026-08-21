@@ -9,6 +9,10 @@ Score: 0.793
   A: [Airtable] Senior Solutions Architect- West Coast @ Remote-US
   B: [Airtable] Senior Solutions Architect @ Anywhere in the World
 
+Score: 0.786
+  A: [Gusto, Inc.] Staff Software Engineer, Salesforce Developer @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
+  B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
+
 Score: 0.779
   A: [Gusto, Inc.] Retirement Implementation Specialist (Conversion Plans) @ Chicago, IL - Remote; Denver, CO - Hybrid
   B: [Gusto, Inc.] Retirement Implementation Specialist @ Anywhere in the World
@@ -104,10 +108,6 @@ Score: 0.681
 Score: 0.679
   A: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ New York, NY;Toronto, Ontario, CAN - Remote
   B: [Gusto, Inc.] Staff Software Engineer,  AI Developer Tools @ Anywhere in the World
-
-Score: 0.677
-  A: [Lemon.io] Senior Data Engineer @ Worldwide
-  B: [Lemon.io] Senior Graphic Designer @ Americas, Europe, Asia, Africa, Oceania
 
 Score: 0.675
   A: [Cloudflare] Principal Software Engineer, Data @ Austin, TX, United States
