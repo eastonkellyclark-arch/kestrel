@@ -1,13 +1,9 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 9 entries
+# 6 entries
 
 Score: 0.814
   A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
   B: [Lemon.io] Senior AI Engineer @ Anywhere in the World
-
-Score: 0.777
-  A: [Lemon.io] Senior Golang Developer @ Europe, USA, UK, Canada, Australia, Singapore
-  B: [Lemon.io] Senior Vue Developer @ Anywhere in the World
 
 Score: 0.714
   A: [A.Team] Senior Independent AI Engineer / Architect @ Americas, Europe, Israel
@@ -24,14 +20,6 @@ Score: 0.689
 Score: 0.678
   A: [Lemon.io] Senior Graphic Designer @ Americas, Europe, Asia, Africa, Oceania
   B: [Lemon.io] Senior AI Engineer @ Anywhere in the World
-
-Score: 0.667
-  A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
-  B: [Lemon.io] Senior Vue Developer @ Anywhere in the World
-
-Score: 0.664
-  A: [Lemon.io] Senior Graphic Designer @ Americas, Europe, Asia, Africa, Oceania
-  B: [Lemon.io] Senior Vue Developer @ Anywhere in the World
 
 Score: 0.659
   A: [Reveille Technologies] Full Stack Developer @ US, Minnesota, Ramsey County, Lauderdale
