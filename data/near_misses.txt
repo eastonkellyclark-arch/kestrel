@@ -1,77 +1,33 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 22 entries
+# 9 entries
+
+Score: 0.814
+  A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
+  B: [Lemon.io] Senior AI Engineer @ Anywhere in the World
 
 Score: 0.777
   A: [Lemon.io] Senior Golang Developer @ Europe, USA, UK, Canada, Australia, Singapore
   B: [Lemon.io] Senior Vue Developer @ Anywhere in the World
 
-Score: 0.772
-  A: [GitLab] AI Transformation Owner, Product & Design @ Remote, Canada; Remote, United Kingdom; Remote, United States
-  B: [GitLab] AI Transformation Owner, CRO @ Anywhere in the World
+Score: 0.714
+  A: [A.Team] Senior Independent AI Engineer / Architect @ Americas, Europe, Israel
+  B: [A.Team] Senior Independent Software Developer ($90-$170/hr) @ Anywhere in the World
 
-Score: 0.758
-  A: [GitLab] Senior AI Engineer @ Remote, US
-  B: [GitLab] AI Engineer @ Anywhere in the World
+Score: 0.699
+  A: [Lemon.io] Senior Golang Developer @ Europe, USA, UK, Canada, Australia, Singapore
+  B: [Lemon.io] Senior AI Engineer @ Anywhere in the World
 
-Score: 0.748
-  A: [GitLab] RPA Engineer, UiPath @ Bangalore, India
-  B: [GitLab] AI Engineer @ Anywhere in the World
+Score: 0.689
+  A: [A.Team] Senior Independent Software Developer @ Americas, Europe, Israel
+  B: [A.Team] Senior Independent AI Engineer / Architect @ Anywhere in the World
 
-Score: 0.722
-  A: [Coinbase] Senior Software Engineer @ US, Minnesota, Ramsey County, Saint Paul
-  B: [Coinbase] Senior Staff Software Engineer, Legal Automation @ Anywhere in the World
-
-Score: 0.722
-  A: [Coinbase] Senior Software Engineer @ US, Minnesota, Ramsey County, Saint Paul
-  B: [Coinbase] Senior Staff Software Engineer, Legal Automation @ Anywhere in the World
-
-Score: 0.713
-  A: [Coinbase] Senior Software Engineer @ US, Minnesota, Ramsey County, Saint Paul
-  B: [Coinbase] Senior Staff Software Engineer, Finance Automation @ Anywhere in the World
-
-Score: 0.713
-  A: [Coinbase] Senior Software Engineer @ US, Minnesota, Ramsey County, Saint Paul
-  B: [Coinbase] Senior Staff Software Engineer, Finance Automation @ Anywhere in the World
-
-Score: 0.709
-  A: [GitLab] Senior Backend Engineer @ Bangalore, India
-  B: [GitLab] AI Engineer @ Anywhere in the World
-
-Score: 0.709
-  A: [GitLab] Senior Support Engineer @ Bangalore, India
-  B: [GitLab] AI Engineer @ Anywhere in the World
-
-Score: 0.709
-  A: [GitLab] Staff Software Engineer @ Bangalore, India
-  B: [GitLab] AI Engineer @ Anywhere in the World
-
-Score: 0.704
-  A: [GitLab] Senior Support Engineer @ Remote, South Korea
-  B: [GitLab] AI Engineer @ Anywhere in the World
-
-Score: 0.693
-  A: [GitLab] Backend Engineer, Geo Team @ Bangalore, India
-  B: [GitLab] AI Engineer @ Anywhere in the World
-
-Score: 0.675
-  A: [GitLab] Senior Backend Engineer @ Remote, Poland; Remote, United Kingdom
-  B: [GitLab] AI Engineer @ Anywhere in the World
+Score: 0.678
+  A: [Lemon.io] Senior Graphic Designer @ Americas, Europe, Asia, Africa, Oceania
+  B: [Lemon.io] Senior AI Engineer @ Anywhere in the World
 
 Score: 0.667
   A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
   B: [Lemon.io] Senior Vue Developer @ Anywhere in the World
-
-Score: 0.665
-  A: [GitLab] Intermediate Backend Engineer @ Bangalore, India
-  B: [GitLab] AI Engineer @ Anywhere in the World
-
-Score: 0.665
-  A: [GitLab] Intermediate Support Engineer @ Bangalore, India
-  B: [GitLab] AI Engineer @ Anywhere in the World
-
-Score: 0.665
-  A: [GitLab] Senior Backend Engineer @ Remote, Canada; Remote, United States
-  B: [GitLab] AI Engineer @ Anywhere in the World
 
 Score: 0.664
   A: [Lemon.io] Senior Graphic Designer @ Americas, Europe, Asia, Africa, Oceania
@@ -80,12 +36,4 @@ Score: 0.664
 Score: 0.659
   A: [Reveille Technologies] Full Stack Developer @ US, Minnesota, Ramsey County, Lauderdale
   B: [Reveleer] Full Stack AI Engineer @ Anywhere in the World
-
-Score: 0.656
-  A: [GitLab] Staff Systems Engineer, IT @ Remote, United States
-  B: [GitLab] AI Engineer @ Anywhere in the World
-
-Score: 0.652
-  A: [GitLab] Support Engineer (AMER) @ Remote, Canada; Remote, United States
-  B: [GitLab] AI Engineer @ Anywhere in the World
 
