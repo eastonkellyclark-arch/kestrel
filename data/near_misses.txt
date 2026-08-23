@@ -1,5 +1,5 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 24 entries
+# 27 entries
 
 Score: 0.791
   A: [Coinbase] Senior Software Engineer @ US, Minnesota, Ramsey County, Saint Paul
@@ -61,9 +61,17 @@ Score: 0.693
   A: [GitLab] Backend Engineer, Geo Team @ Bangalore, India
   B: [GitLab] AI Engineer @ Anywhere in the World
 
+Score: 0.690
+  A: [Unknown] [FOR HIRE] Looking for freelance work @ 
+  B: [Unknown] Who are we liking for biz banking? @ 
+
 Score: 0.675
   A: [GitLab] Senior Backend Engineer @ Remote, Poland; Remote, United Kingdom
   B: [GitLab] AI Engineer @ Anywhere in the World
+
+Score: 0.667
+  A: [Unknown] [FOR HIRE] Looking for freelance work @ 
+  B: [Unknown] Looking for the perfect service @ 
 
 Score: 0.667
   A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
@@ -92,6 +100,10 @@ Score: 0.659
 Score: 0.656
   A: [GitLab] Staff Systems Engineer, IT @ Remote, United States
   B: [GitLab] AI Engineer @ Anywhere in the World
+
+Score: 0.654
+  A: [Unknown] [For Hire] I'll do literally anything for 15$ an hour @ 
+  B: [Unknown] Who are we liking for biz banking? @ 
 
 Score: 0.652
   A: [GitLab] Support Engineer (AMER) @ Remote, Canada; Remote, United States
