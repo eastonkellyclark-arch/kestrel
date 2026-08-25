@@ -1,21 +1,97 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 6 entries
+# 26 entries
 
 Score: 0.814
   A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
   B: [Lemon.io] Senior AI Engineer @ Anywhere in the World
 
+Score: 0.786
+  A: [Gusto, Inc.] Staff Software Engineer, Retirement AI @ Denver, CO;San Francisco, CA;New York, NY
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.767
+  A: [Gusto, Inc.] Staff Software Engineer, Gustie Assist @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.761
+  A: [Gusto, Inc.] Staff Software Engineer, Tax Accounts @ San Francisco, CA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.753
+  A: [Gusto, Inc.] Staff Software Engineer, PEO Benefits @ Denver, CO;San Francisco, CA;New York, NY
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.747
+  A: [Gusto, Inc.] Staff Software Engineer, Tax Experiences @ San Francisco, CA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.741
+  A: [Gusto, Inc.] Staff Software Engineer, HR Experiences @ New York, NY
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.739
+  A: [Gusto, Inc.] Senior Staff Software Engineer - Pricing and Packaging @ San Francisco, CA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.728
+  A: [Gusto, Inc.] Senior Staff Software Engineer, Money Group @ Denver, CO;San Francisco, CA;New York, NY
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.723
+  A: [Gusto, Inc.] Staff Software Engineer, Core AI Platforms @ San Francisco, CA - Hybrid; Denver, CO - Hybrid; New York, NY - Hybrid
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.722
+  A: [Gusto, Inc.] Staff Software Engineer, Core Products @ New York, New York, United States; San Francisco, CA - Hybrid
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.722
+  A: [Gusto, Inc.] Staff Software Engineer, Pricing and Packaging Engineering @ San Francisco, CA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
 Score: 0.714
   A: [A.Team] Senior Independent AI Engineer / Architect @ Americas, Europe, Israel
   B: [A.Team] Senior Independent Software Developer ($90-$170/hr) @ Anywhere in the World
+
+Score: 0.712
+  A: [Gusto, Inc.] Staff Software Engineer, Salesforce Developer @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.711
+  A: [Gusto, Inc.] Senior Staff Software Engineer, Growth Onboarding @ San Francisco, CA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.709
+  A: [Gusto, Inc.] Senior Staff Software Engineer, iOS Platform @ Denver, CO;San Francisco, CA;New York, NY;Seattle, WA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.707
+  A: [Gusto, Inc.] Staff Software Engineer, Business Money @ San Francisco, CA;New York, NY;Ontario, CAN - Remote;Toronto, Ontario, CAN - Remote;United States - Remote
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.701
+  A: [Gusto, Inc.] Staff Software Engineer, Business Insurance @ New York, New York, United States
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
 Score: 0.699
   A: [Lemon.io] Senior Golang Developer @ Europe, USA, UK, Canada, Australia, Singapore
   B: [Lemon.io] Senior AI Engineer @ Anywhere in the World
 
+Score: 0.697
+  A: [Gusto, Inc.] Staff Software Engineer, Developer Productivity Async @ San Francisco, CA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.697
+  A: [Gusto, Inc.] Staff Software Engineer, Growth (Revenue Enablement) @ San Francisco, CA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
 Score: 0.689
   A: [A.Team] Senior Independent Software Developer @ Americas, Europe, Israel
   B: [A.Team] Senior Independent AI Engineer / Architect @ Anywhere in the World
+
+Score: 0.681
+  A: [Gusto, Inc.] Principal Software Engineer - Pay Group Engineering @ Denver, CO;San Francisco, CA;New York, NY
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
 Score: 0.678
   A: [Lemon.io] Senior Graphic Designer @ Americas, Europe, Asia, Africa, Oceania
@@ -24,4 +100,8 @@ Score: 0.678
 Score: 0.659
   A: [Reveille Technologies] Full Stack Developer @ US, Minnesota, Ramsey County, Lauderdale
   B: [Reveleer] Full Stack AI Engineer @ Anywhere in the World
+
+Score: 0.657
+  A: [Gusto, Inc.] Software Engineer, ML Platform @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
