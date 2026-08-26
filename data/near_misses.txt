@@ -1,5 +1,5 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 26 entries
+# 25 entries
 
 Score: 0.814
   A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
@@ -23,10 +23,6 @@ Score: 0.753
 
 Score: 0.747
   A: [Gusto, Inc.] Staff Software Engineer, Tax Experiences @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
-
-Score: 0.741
-  A: [Gusto, Inc.] Staff Software Engineer, HR Experiences @ New York, NY
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
 Score: 0.739
