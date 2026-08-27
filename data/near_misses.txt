@@ -9,6 +9,10 @@ Score: 0.786
   A: [Gusto, Inc.] Staff Software Engineer, Retirement AI @ Denver, CO;San Francisco, CA;New York, NY
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
+Score: 0.781
+  A: [Gusto, Inc.] Staff Software Engineer- Tax Credits @ New York, New York, United States
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
 Score: 0.771
   A: [Gusto, Inc.] Staff Software Engineer, Retirement @ United States
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
@@ -19,6 +23,10 @@ Score: 0.767
 
 Score: 0.761
   A: [Gusto, Inc.] Staff Software Engineer, Tax Accounts @ San Francisco, CA
+  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.761
+  A: [Gusto, Inc.] Staff Software Engineer, AI Voice and Content @ San Francisco, CA - Hybrid
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
 Score: 0.753
@@ -81,10 +89,6 @@ Score: 0.697
   A: [Gusto, Inc.] Staff Software Engineer, Developer Productivity Async @ San Francisco, CA
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
-Score: 0.697
-  A: [Gusto, Inc.] Staff Software Engineer, Growth (Revenue Enablement) @ San Francisco, CA
-  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
-
 Score: 0.689
   A: [A.Team] Senior Independent Software Developer @ Americas, Europe, Israel
   B: [A.Team] Senior Independent AI Engineer / Architect @ Anywhere in the World
@@ -96,10 +100,6 @@ Score: 0.681
 Score: 0.678
   A: [Lemon.io] Senior Graphic Designer @ Americas, Europe, Asia, Africa, Oceania
   B: [Lemon.io] Senior AI Engineer @ Anywhere in the World
-
-Score: 0.659
-  A: [Reveille Technologies] Full Stack Developer @ US, Minnesota, Ramsey County, Lauderdale
-  B: [Reveleer] Full Stack AI Engineer @ Anywhere in the World
 
 Score: 0.657
   A: [Gusto, Inc.] Software Engineer, ML Platform @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
