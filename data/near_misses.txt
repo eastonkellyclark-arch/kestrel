@@ -1,5 +1,5 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 27 entries
+# 26 entries
 
 Score: 0.814
   A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
@@ -65,10 +65,6 @@ Score: 0.714
   A: [A.Team] Senior Independent AI Engineer / Architect @ Americas, Europe, Israel
   B: [A.Team] Senior Independent Software Developer ($90-$170/hr) @ Anywhere in the World
 
-Score: 0.712
-  A: [Gusto, Inc.] Staff Software Engineer, Salesforce Developer @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
-  B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
-
 Score: 0.711
   A: [Gusto, Inc.] Senior Staff Software Engineer, Growth Onboarding @ San Francisco, CA
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
@@ -77,8 +73,8 @@ Score: 0.709
   A: [Gusto, Inc.] Senior Staff Software Engineer, iOS Platform @ Denver, CO;San Francisco, CA;New York, NY;Seattle, WA
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
-Score: 0.707
-  A: [Gusto, Inc.] Staff Software Engineer, Business Money @ San Francisco, CA;New York, NY;Ontario, CAN - Remote;Toronto, Ontario, CAN - Remote;United States - Remote
+Score: 0.705
+  A: [Gusto, Inc.] Staff Software Engineer, Unified Services Platform @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
 
 Score: 0.701
