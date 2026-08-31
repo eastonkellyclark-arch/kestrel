@@ -1,5 +1,5 @@
 # Near-miss dedupe entries (score between 0.65 and 0.82)
-# 25 entries
+# 26 entries
 
 Score: 0.814
   A: [Lemon.io] Senior Data Engineer @ LATAM, Europe, USA, Canada, APAC
@@ -96,6 +96,10 @@ Score: 0.689
 Score: 0.681
   A: [Gusto, Inc.] Principal Software Engineer - Pay Group Engineering @ Denver, CO;San Francisco, CA;New York, NY
   B: [Gusto, Inc.] Staff Software Engineer, Time and Scheduling @ Anywhere in the World
+
+Score: 0.665
+  A: [Unknown] [For Hire] Unique, professional and Minimalist Logo Designer @ 
+  B: [Unknown] Any Argentina Liga Profesional fans in here? @ 
 
 Score: 0.657
   A: [Gusto, Inc.] Software Engineer, ML Platform @ Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid
