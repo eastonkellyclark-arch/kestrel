@@ -12,6 +12,7 @@ Alert URLs are tracking-wrapped — unwrapped before storage for dedupe.
 import base64
 import json
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -251,12 +252,30 @@ def _identify_sender(from_header: str) -> str | None:
     return None
 
 
+def _is_headless() -> bool:
+    """True when there is no human present to complete a browser consent.
+
+    GitHub Actions sets CI=true. KESTREL_HEADLESS forces the same behaviour
+    for cron and container runs.
+    """
+    return bool(os.environ.get("CI") or os.environ.get("KESTREL_HEADLESS"))
+
+
 def fetch_alerts(credentials_path: str, token_path: str,
-                 max_results: int = 50) -> list[FetchResult]:
+                 max_results: int = 50,
+                 allow_interactive: bool | None = None) -> list[FetchResult]:
     """Fetch job alerts from Gmail. Requires OAuth credentials.
 
     Returns one FetchResult per sender — per-sender failure isolation.
+
+    A stored token with a refresh token renews without a browser, so this runs
+    headlessly in CI. Only the FIRST authorisation needs a human. When there is
+    no human — `allow_interactive=False`, or CI detected — this refuses and
+    says so rather than calling run_local_server(), which would block on a
+    browser that will never open until the job hits its timeout.
     """
+    if allow_interactive is None:
+        allow_interactive = not _is_headless()
     try:
         from google.oauth2.credentials import Credentials
         from google_auth_oauthlib.flow import InstalledAppFlow
@@ -278,17 +297,54 @@ def fetch_alerts(credentials_path: str, token_path: str,
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                # A dead refresh token used to propagate out of here and take
+                # the whole fetch step down with it. Google expires refresh
+                # tokens after 7 days while the OAuth consent screen is in
+                # "Testing" publishing status, so this is the expected failure
+                # mode, not an exceptional one.
+                detail = str(e)
+                if "invalid_grant" in detail or "expired or revoked" in detail:
+                    detail = (
+                        "Gmail refresh token is expired or revoked. Google expires "
+                        "refresh tokens after 7 days while the OAuth consent screen is "
+                        "in 'Testing' publishing status. Set the consent screen to "
+                        "'In production' in Google Cloud Console, re-authorise locally, "
+                        "and update the GMAIL_TOKEN_JSON secret. "
+                        f"(original: {e})"
+                    )
+                logger.error("Gmail authorisation failed: %s", detail)
+                return [FetchResult("Gmail", "gmail_alert", "inbox",
+                                    FetchOutcome.NETWORK_ERROR, error_detail=detail)]
         else:
             if not Path(credentials_path).exists():
                 return [FetchResult("Gmail", "gmail_alert", "inbox",
                                     FetchOutcome.NETWORK_ERROR,
                                     error_detail=f"Credentials file not found: {credentials_path}")]
+            if not allow_interactive:
+                return [FetchResult(
+                    "Gmail", "gmail_alert", "inbox",
+                    FetchOutcome.NETWORK_ERROR,
+                    error_detail=(
+                        f"Gmail needs interactive authorisation and none is possible here "
+                        f"(no valid token at {token_path}). Run the pipeline locally once to "
+                        f"complete the browser consent, then put the resulting token JSON in "
+                        f"the GMAIL_TOKEN_JSON Actions secret. Refusing to open a browser "
+                        f"that nothing can answer."
+                    ),
+                )]
             flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
             creds = flow.run_local_server(port=0)
 
-        token_file.write_text(creds.to_json())
-        logger.info("Gmail token saved to %s", token_file)
+        try:
+            token_file.write_text(creds.to_json())
+            logger.info("Gmail token saved to %s", token_file)
+        except OSError as e:
+            # A read-only or ephemeral token path is survivable — the refreshed
+            # credential is still good for this run.
+            logger.warning("Could not persist refreshed Gmail token to %s: %s", token_file, e)
 
     service = build("gmail", "v1", credentials=creds)
 

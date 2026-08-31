@@ -1,4 +1,11 @@
-"""SQLite initialisation. Creates the database file and base tables."""
+"""SQLite initialisation. Creates the database file and base tables.
+
+The CREATE TABLE statements below are the FROZEN BASELINE (schema version 4).
+Do not edit them to add or change columns — a fresh database is created at
+this baseline and then migrated forward by migrations.py. Editing the
+baseline makes fresh databases and migrated databases diverge.
+Every schema change from here on goes in migrations.py.
+"""
 
 import sqlite3
 from pathlib import Path
@@ -149,3 +156,9 @@ def init_db() -> None:
     )
     conn.commit()
     conn.close()
+
+    # Bring the schema forward. Imported here rather than at module scope
+    # because migrations.py depends on get_connection().
+    from .migrations import migrate
+
+    migrate()

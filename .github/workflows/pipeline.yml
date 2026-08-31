@@ -43,11 +43,41 @@ jobs:
           KESTREL_DATA_DIR=./data
           ENVEOF
 
+      - name: Write Gmail credentials from secrets
+        env:
+          GMAIL_CREDENTIALS_JSON: ${{ secrets.GMAIL_CREDENTIALS_JSON }}
+          GMAIL_TOKEN_JSON: ${{ secrets.GMAIL_TOKEN_JSON }}
+        run: |
+          # A stored token with a refresh token renews without a browser, so
+          # the alert channel runs headlessly. Only the first authorisation
+          # needs a human, and that has already happened locally.
+          if [ -n "$GMAIL_CREDENTIALS_JSON" ] && [ -n "$GMAIL_TOKEN_JSON" ]; then
+            mkdir -p data
+            printf '%s' "$GMAIL_CREDENTIALS_JSON" > data/gmail_credentials.json
+            printf '%s' "$GMAIL_TOKEN_JSON" > data/gmail_token.json
+            echo "KESTREL_GMAIL_CREDENTIALS_JSON=./data/gmail_credentials.json" >> .env
+            echo "KESTREL_GMAIL_TOKEN_JSON=./data/gmail_token.json" >> .env
+            echo "Gmail alert channel: configured"
+          else
+            echo "::warning::Gmail alert channel NOT configured - GMAIL_CREDENTIALS_JSON and/or GMAIL_TOKEN_JSON secrets are missing. LinkedIn, Indeed, ZipRecruiter and Glassdoor will contribute nothing this run."
+          fi
+
+      - name: Restore vault
+        run: |
+          mkdir -p data
+          if git ls-remote --exit-code --heads origin data-vault >/dev/null 2>&1; then
+            git fetch --depth=1 --no-tags origin data-vault
+            git cat-file blob FETCH_HEAD:vault-snapshot.db.gz > data/vault-snapshot.db.gz
+            ls -lh data/vault-snapshot.db.gz
+            python -m backend.vault_cli import --from data/vault-snapshot.db.gz
+          else
+            python -m backend.vault_cli import --from data/vault-snapshot.db.gz --allow-missing
+          fi
+          python -m backend.vault_cli status
+
       - name: Fetch all sources
         id: fetch
         run: |
-          # Start fresh — schema may have changed since last committed DB
-          rm -f data/kestrel.db
           python -c "
           import logging, json, sys
           logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
@@ -56,6 +86,8 @@ jobs:
           from backend.app.collector import fetch_all, print_report
           from backend.app.repository import raw_listing_count
 
+          # init_db() creates a fresh database at the frozen baseline and then
+          # runs migrations. The vault is carried forward, never deleted.
           init_db()
           seed()
 
@@ -69,8 +101,14 @@ jobs:
           slug_warnings = []
           flaky_expected = []  # Reddit 429, Craigslist 503 — not actionable
 
+          skipped = []
+
           for r in results:
               if r.outcome.value in ('success', 'empty_board'):
+                  continue
+              if r.outcome.value == 'skipped':
+                  skipped.append(r)
+                  print(f'::warning::{r.company} SKIPPED - {r.error_detail}')
                   continue
               detail = (r.error_detail or '').lower()
 
@@ -100,11 +138,22 @@ jobs:
                   print(f'::error::Credential failure: {e.company} — {e.error_detail}')
               sys.exit(1)
 
+          from backend.app.collector import healthy_pairs
+          healthy = sorted(healthy_pairs(results))
+
           summary = {
               'total_fetched': after - before,
+              'vault_total': after,
               'sources_ok': sum(1 for r in results if r.outcome.value == 'success'),
               'warnings': len(slug_warnings),
               'flaky': len(flaky_expected),
+              'skipped': [{'company': r.company, 'why': r.error_detail} for r in skipped],
+              'healthy': healthy,
+              'report': [
+                  {'company': r.company, 'outcome': r.outcome.value,
+                   'jobs': r.job_count, 'detail': r.error_detail}
+                  for r in results
+              ],
           }
           with open('fetch_summary.json', 'w') as f:
               json.dump(summary, f)
@@ -126,6 +175,28 @@ jobs:
           merge_all(near_miss_file=str(settings.data_dir / 'near_misses.txt'))
           score_stats = score_all()
           print(f'Scored: {score_stats[\"scored\"]}, Dealbreakers: {score_stats[\"dealbreakers\"]}')
+          "
+
+      - name: Mark stale listings
+        run: |
+          python -c "
+          import json, logging
+          from datetime import datetime, timedelta
+          logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
+          from backend.app.repository import mark_stale, staleness_summary
+
+          with open('fetch_summary.json') as f:
+              summary = json.load(f)
+          healthy = {tuple(p) for p in summary.get('healthy', [])}
+
+          # Two missed runs of tolerance (runs are 6h apart). A source has to be
+          # quiet for a full day before its listings leave the showroom.
+          now = datetime.utcnow()
+          stats = mark_stale(healthy, now - timedelta(hours=24), now)
+          print(f'Staleness: {stats[\"marked\"]} marked stale, {stats[\"revived\"]} revived, '
+                f'{stats[\"sources_considered\"]} sources considered')
+          s = staleness_summary()
+          print(f'Listings: {s[\"total\"]} total, {s[\"live\"]} live, {s[\"stale\"]} stale')
           "
 
       - name: Export static data
@@ -180,17 +251,93 @@ jobs:
               sys.exit(1)
           "
 
-      - name: Commit data updates
+      - name: Publish vault snapshot
         run: |
           git config user.name "Kestrel Pipeline"
           git config user.email "pipeline@kestrel.adlaunch.studio"
-          git add data/ -f 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No data changes to commit"
-          else
-            git commit -m "Pipeline: $(date -u +%Y-%m-%dT%H:%M) — $(cat fetch_summary.json | python -c 'import sys,json; d=json.load(sys.stdin); print(f"{d[\"total_fetched\"]} new, {d[\"sources_ok\"]} sources ok")')"
-            git push
-          fi
+
+          python -m backend.vault_cli export --to data/vault-snapshot.db.gz
+          python -m backend.vault_cli manifest --to data/vault-manifest.json
+          cat data/vault-manifest.json
+
+          # Build the commit with plumbing, using a scratch index so the working
+          # tree is never touched and the branch stays a single root commit.
+          # Force-pushing an orphan commit means the repository carries exactly
+          # ONE copy of the vault rather than one per run: the previous version
+          # becomes unreachable instead of accumulating in history. The vault's
+          # own history lives inside the SQLite file and is never pruned — git
+          # is only the transport.
+          BLOB=$(git hash-object -w data/vault-snapshot.db.gz)
+          MANI=$(git hash-object -w data/vault-manifest.json)
+
+          export GIT_INDEX_FILE="$RUNNER_TEMP/vault-index"
+          rm -f "$GIT_INDEX_FILE"
+          git update-index --add --cacheinfo "100644,$BLOB,vault-snapshot.db.gz"
+          git update-index --add --cacheinfo "100644,$MANI,manifest.json"
+          TREE=$(git write-tree)
+          unset GIT_INDEX_FILE
+
+          COUNT=$(python -c "import json; print(json.load(open('data/vault-manifest.json'))['raw_listings'])")
+          MSG="Vault snapshot $(date -u +%Y-%m-%dT%H:%M) - $COUNT raw listings"
+          COMMIT=$(git commit-tree "$TREE" -m "$MSG")
+          git push --force origin "$COMMIT:refs/heads/data-vault"
+          echo "Published $MSG ($(du -h data/vault-snapshot.db.gz | cut -f1))"
+
+      - name: Run summary
+        if: always()
+        run: |
+          # The old per-run record was a git commit message built by a
+          # python -c whose f-string contained backslashes. It raised
+          # SyntaxError on every run, so stdout was empty and all 41 commit
+          # messages ended at the em dash. Reporting now goes to the job
+          # summary, where a broken formatter is visible rather than silent.
+          python - <<'SUMMARY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os, pathlib
+
+          out = ["## Kestrel pipeline", ""]
+
+          summary_file = pathlib.Path("fetch_summary.json")
+          if not summary_file.exists():
+              out.append("Fetch did not complete - no summary was written.")
+              print(chr(10).join(out))
+              raise SystemExit(0)
+
+          d = json.loads(summary_file.read_text())
+          out += [
+              f"- **Fetched this run:** {d.get('total_fetched', 0)} new raw listings",
+              f"- **Vault total:** {d.get('vault_total', 0)}",
+              f"- **Sources OK:** {d.get('sources_ok', 0)}",
+              f"- **Warnings:** {d.get('warnings', 0)}   **Flaky (expected):** {d.get('flaky', 0)}",
+              "",
+          ]
+
+          skipped = d.get("skipped") or []
+          if skipped:
+              out += ["### Skipped sources", ""]
+              out += [f"- **{s['company']}** - {s['why']}" for s in skipped]
+              out.append("")
+
+          rows = d.get("report") or []
+          if rows:
+              out += ["### Per-source", "", "| Source | Outcome | Jobs | Detail |", "|---|---|---:|---|"]
+              for r in sorted(rows, key=lambda x: (x["outcome"], x["company"])):
+                  detail = (r.get("detail") or "")[:80].replace("|", "/")
+                  out.append(f"| {r['company']} | {r['outcome']} | {r['jobs']} | {detail} |")
+
+          manifest = pathlib.Path("data/vault-manifest.json")
+          if manifest.exists():
+              m = json.loads(manifest.read_text())
+              out += [
+                  "",
+                  "### Vault",
+                  "",
+                  f"- **Raw listings:** {m['raw_listings']}",
+                  f"- **Oldest entry:** {m.get('oldest_entry')}",
+                  f"- **Snapshot size:** {(m.get('snapshot_bytes') or 0) / 1048576:.2f} MB",
+              ]
+
+          print(chr(10).join(out))
+          SUMMARY
 
       - name: Notify on failure
         if: failure()

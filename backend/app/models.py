@@ -18,6 +18,11 @@ class FetchOutcome(str, Enum):
     SLUG_NOT_FOUND = "slug_not_found"
     BOARD_DISABLED = "board_disabled"
     NETWORK_ERROR = "network_error"
+    # Configured but deliberately not run this pass (missing credentials, a
+    # disabled feed). Distinct from success-with-nothing and from failure:
+    # a source that never ran must never look like a source that ran and
+    # found nothing.
+    SKIPPED = "skipped"
 
 
 @dataclass

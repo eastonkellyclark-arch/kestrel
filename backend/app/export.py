@@ -65,7 +65,7 @@ def export_public(output_dir: Path) -> int:
                score, score_breakdown, degree_hard_required,
                experience_required, bid_count
         FROM listings
-        WHERE canonical_id IS NULL AND score IS NOT NULL
+        WHERE canonical_id IS NULL AND score IS NOT NULL AND is_stale = 0
         ORDER BY score DESC
         """
     ).fetchall()

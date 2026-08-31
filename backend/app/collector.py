@@ -28,10 +28,27 @@ ADAPTERS = {
 OUTCOME_LABELS = {
     FetchOutcome.SUCCESS: "OK",
     FetchOutcome.EMPTY_BOARD: "EMPTY (no open roles)",
+    FetchOutcome.SKIPPED: "SKIPPED (not configured)",
     FetchOutcome.SLUG_NOT_FOUND: "SLUG NOT FOUND",
     FetchOutcome.BOARD_DISABLED: "BOARD DISABLED",
     FetchOutcome.NETWORK_ERROR: "NETWORK ERROR",
 }
+
+
+def healthy_pairs(results: list[FetchResult]) -> set[tuple[str, str]]:
+    """(vault_source, board_slug) pairs that we heard from successfully.
+
+    SUCCESS and EMPTY_BOARD both count: a board that returned zero jobs has
+    genuinely told us its listings are gone. A board that errored has told us
+    nothing, and must not be used to conclude anything about staleness.
+    """
+    healthy: set[tuple[str, str]] = set()
+    for r in results:
+        if r.outcome not in (FetchOutcome.SUCCESS, FetchOutcome.EMPTY_BOARD):
+            continue
+        platform = getattr(r.platform, "value", r.platform)
+        healthy.add((str(platform), r.board_slug))
+    return healthy
 
 
 def fetch_all(include_aggregators: bool = True) -> list[FetchResult]:
@@ -94,6 +111,21 @@ def fetch_all(include_aggregators: bool = True) -> list[FetchResult]:
             token_path = token or str(settings.data_dir / "gmail_token.json")
             logger.info("Fetching Gmail alerts...")
             results.extend(gmail_alerts.fetch_alerts(creds, token_path))
+        else:
+            # Say so. This channel is the only route to LinkedIn, Indeed,
+            # ZipRecruiter and Glassdoor, and it silently contributed nothing
+            # for thirteen days because KESTREL_GMAIL_CREDENTIALS_JSON was
+            # never set in CI. A source that is not running must look
+            # different from a source that ran and found nothing.
+            logger.warning(
+                "Gmail alerts SKIPPED — KESTREL_GMAIL_CREDENTIALS_JSON is not set. "
+                "LinkedIn, Indeed, ZipRecruiter and Glassdoor are unreachable "
+                "without it; no listings will come from those boards."
+            )
+            results.append(FetchResult(
+                "Gmail", "gmail_alert", "inbox", FetchOutcome.SKIPPED,
+                error_detail="KESTREL_GMAIL_CREDENTIALS_JSON not set",
+            ))
 
         # Gig feeds (Google Alerts, Reddit, Craigslist, HN)
         results.extend(gig_feeds.fetch_all_gig_feeds())

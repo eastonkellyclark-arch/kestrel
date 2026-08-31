@@ -8,6 +8,7 @@ import logging
 import re
 from datetime import datetime
 
+from .dates import normalize_timestamp
 from .database import get_connection
 from .desc_quality import classify as classify_description
 from .normalize import normalize_company, normalize_title
@@ -80,9 +81,9 @@ def _parse_greenhouse(raw: dict, board_slug: str) -> dict | None:
     url = raw.get("absolute_url", "")
 
     # Posted date
-    posted_at = raw.get("first_published") or raw.get("updated_at") or ""
-    if posted_at:
-        posted_at = posted_at[:19]  # trim timezone suffix
+    posted_at = normalize_timestamp(
+        raw.get("first_published") or raw.get("updated_at") or ""
+    )
 
     # Department
     departments = raw.get("departments", [])
@@ -161,7 +162,7 @@ def _parse_lever(raw: dict, board_slug: str) -> dict | None:
     created_at_ms = raw.get("createdAt", 0)
     posted_at = ""
     if created_at_ms:
-        posted_at = datetime.utcfromtimestamp(created_at_ms / 1000).isoformat()[:19]
+        posted_at = normalize_timestamp(created_at_ms)
 
     department = cats.get("team", "")
 
@@ -220,9 +221,7 @@ def _parse_adzuna(raw: dict, board_slug: str) -> dict | None:
     desc_plain = _strip_html(raw_desc)
 
     url = raw.get("redirect_url", "")
-    posted_at = raw.get("created", "")
-    if posted_at:
-        posted_at = posted_at[:19]
+    posted_at = normalize_timestamp(raw.get("created", ""))
 
     is_remote, remote_conf = detect_remote(
         location=location, title=title, description=desc_plain,
@@ -284,9 +283,7 @@ def _parse_usajobs(raw: dict, board_slug: str) -> dict | None:
         desc_plain += f"\n{quals}"
 
     url = match.get("PositionURI", match.get("ApplyURI", [""])[0] if isinstance(match.get("ApplyURI"), list) else "")
-    posted_at = match.get("PublicationStartDate", "")
-    if posted_at:
-        posted_at = posted_at[:19]
+    posted_at = normalize_timestamp(match.get("PublicationStartDate", ""))
 
     is_remote, remote_conf = detect_remote(
         location=location, title=title, description=desc_plain,
@@ -341,9 +338,7 @@ def _parse_ashby(raw: dict, board_slug: str) -> dict | None:
         desc_plain = _strip_html(desc_html)
 
     url = raw.get("jobUrl", "")
-    posted_at = raw.get("publishedAt", "")
-    if posted_at:
-        posted_at = posted_at[:19]
+    posted_at = normalize_timestamp(raw.get("publishedAt", ""))
 
     department = raw.get("department", "")
 
@@ -404,9 +399,7 @@ def _parse_recruitee(raw: dict, board_slug: str) -> dict | None:
     desc_plain = _strip_html(full_html)
 
     url = raw.get("careers_url", raw.get("careers_apply_url", ""))
-    posted_at = raw.get("published_at", raw.get("created_at", ""))
-    if posted_at:
-        posted_at = posted_at[:19]
+    posted_at = normalize_timestamp(raw.get("published_at", raw.get("created_at", "")))
 
     department = raw.get("department", "")
 
@@ -478,10 +471,11 @@ def _parse_remote_feed(raw: dict, board_slug: str) -> dict | None:
 
     url = raw.get("url", raw.get("link", ""))
 
-    posted_at = raw.get("posted_at", raw.get("date", raw.get("publication_date", raw.get("pubDate", ""))))
-    if posted_at:
-        # Handle various date formats
-        posted_at = posted_at[:19]
+    # RemoteOK sends epoch or ISO, Remotive ISO, We Work Remotely RFC 822.
+    posted_at = normalize_timestamp(
+        raw.get("posted_at") or raw.get("date") or raw.get("publication_date")
+        or raw.get("pubDate") or ""
+    )
 
     tags = raw.get("tags", [])
     department = tags[0] if tags and isinstance(tags[0], str) else ""
@@ -594,9 +588,7 @@ def _parse_gig_feed(raw: dict, board_slug: str) -> dict | None:
 
     url = raw.get("link", raw.get("url", ""))
 
-    posted_at = raw.get("pub_date", raw.get("created_at", ""))
-    if posted_at:
-        posted_at = posted_at[:19]
+    posted_at = normalize_timestamp(raw.get("pub_date", raw.get("created_at", "")))
 
     is_remote, remote_conf = detect_remote(
         location=location, title=title, description=desc_plain,
@@ -668,7 +660,7 @@ def _parse_freelancer(raw: dict, board_slug: str) -> dict | None:
     time_submitted = raw.get("time_submitted")
     posted_at = ""
     if time_submitted:
-        posted_at = datetime.utcfromtimestamp(time_submitted).isoformat()[:19]
+        posted_at = normalize_timestamp(time_submitted)
 
     # Budget — structured data, include in description for scorer
     budget = raw.get("budget", {})
@@ -787,7 +779,7 @@ def translate_all() -> dict:
         slug_to_company[(r["platform"], r["board_slug"])] = r["company"]
 
     raw_rows = conn.execute(
-        "SELECT id, source, board_slug, source_id, raw_json FROM raw_listings"
+        "SELECT id, source, board_slug, source_id, raw_json, last_seen_at FROM raw_listings"
     ).fetchall()
     conn.close()
 
@@ -832,6 +824,11 @@ def translate_all() -> dict:
             record["company_normalized"] = normalize_company(real_name)
 
         record["created_at"] = now
+        # Vault provenance. `vault_source` is the raw source label, which is not
+        # always record["source"] — Reddit vaults under 'reddit' but surfaces as
+        # the subreddit. Staleness checks key on this pair.
+        record["vault_source"] = source
+        record["last_seen_at"] = row["last_seen_at"]
         parsed_listings.append(record)
 
     # Bulk upsert: insert new, update existing (re-translate mode).
@@ -861,6 +858,7 @@ def translate_all() -> dict:
                     description_quality,
                     gig_classification, gig_confidence, bid_count,
                     experience_required,
+                    vault_source, last_seen_at,
                     created_at
                 ) VALUES (
                     :listing_type, :source, :source_id, :board_slug,
@@ -871,6 +869,7 @@ def translate_all() -> dict:
                     :description_quality,
                     :gig_classification, :gig_confidence, :bid_count,
                     :experience_required,
+                    :vault_source, :last_seen_at,
                     :created_at
                 )
                 """,
@@ -897,7 +896,9 @@ def translate_all() -> dict:
                     gig_classification = :gig_classification,
                     gig_confidence = :gig_confidence,
                     bid_count = :bid_count,
-                    experience_required = :experience_required
+                    experience_required = :experience_required,
+                    vault_source = :vault_source,
+                    last_seen_at = :last_seen_at
                 WHERE source = :source AND source_id = :source_id
                 """,
                 rec,
