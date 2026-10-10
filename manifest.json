@@ -1,0 +1,18 @@
+{
+  "raw_listings": 10456,
+  "by_source": {
+    "freelancer": 4907,
+    "greenhouse": 1626,
+    "reddit": 1516,
+    "adzuna": 1122,
+    "usajobs": 714,
+    "remoteok": 328,
+    "weworkremotely": 135,
+    "lever": 78,
+    "remotive": 30
+  },
+  "oldest_entry": "2026-08-31T03:59:39.194686",
+  "last_seen": "2026-10-10T04:36:18.358038",
+  "snapshot_bytes": 12844944,
+  "run": "38024601336"
+}
